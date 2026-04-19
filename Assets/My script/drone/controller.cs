@@ -12,7 +12,8 @@ public class controller : UdonSharpBehaviour
      public bool condention =false;
      float horizontalInput;
      float verticalInput;
-     bool jumpInput;
+     bool jumpInput =false;
+     bool speeddown =false;
      private float speed = 0f;
      private float maxSpeed = 5f;
     void Start()
@@ -81,6 +82,10 @@ public class controller : UdonSharpBehaviour
             car.transform.Translate(0, 1, 0);
         }*/
         jumpInput = value;
+    }
+    void Input.GetAxis("Shift")
+    {
+        speeddown = true;
     }
 
 }
