@@ -13,9 +13,11 @@ public class controller : UdonSharpBehaviour
      float horizontalInput;
      float verticalInput;
      bool jumpInput =false;
-     bool speeddown =false;
-     private float speed = 0f;
+     public float speed = 0f;
      private float maxSpeed = 5f;
+     public Material sky1,sky2;
+     //public VRCObjectPool dronePool;
+
     void Start()
     {
           station = GetComponent<VRCStation>();
@@ -29,15 +31,23 @@ public class controller : UdonSharpBehaviour
             Debug.Log("Horizontal input: " + horizontalInput);
             Debug.Log("Vertical input: " + verticalInput);
             Debug.Log("Jump input: " + jumpInput);
-            /*car.transform.Translate(horizontalInput, 0, verticalInput);
-            if (jumpInput)
-            {
-                car.transform.Translate(0, 1, 0);
-            }*/
+  
+            
             if (jumpInput&& speed<maxSpeed)
             {
                 speed+=0.01f;
             }
+            if(Input.GetButtonUp("Shift")){
+                 speed=0f;
+                 station.ExitStation(Networking.LocalPlayer);
+                 car.transform.rotation = Quaternion.identity;
+                 //ReturnToPool();
+            }
+            if(Input.GetButtonUp("Fire1")){
+                 speed-=0.01f;
+            }
+             DiveintoSea();
+
             car.transform.Rotate(horizontalInput, 0, verticalInput);
             car.transform.Translate(-speed, 0, 0);
         }
@@ -83,10 +93,33 @@ public class controller : UdonSharpBehaviour
         }*/
         jumpInput = value;
     }
-    void Input.GetAxis("Shift")
+    /*void Input.Getbutton("Run")
     {
         speeddown = true;
+    }*/
+    /////////////////////////////////////////////////////////////
+   /*public void ReturnToPool()
+    {
+        if (dronePool != null)
+        {
+            dronePool.Return(this.gameObject);
+        }
+        else
+        {
+            // プールが設定されていない場合は単純に非表示にする
+            this.gameObject.SetActive(false);
+        }
+    }*/
+    void DiveintoSea()
+    {
+        if(car.transform.position.y < -27.0f)
+        {
+            RenderSettings.skybox = sky2;
+        }
+        else
+        {
+            RenderSettings.skybox = sky1;
+        }
     }
-
 }
 
