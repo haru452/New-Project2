@@ -121,5 +121,14 @@ public class controller : UdonSharpBehaviour
             RenderSettings.skybox = sky1;
         }
     }
+    public override void OnPlayerTriggerExit(VRCPlayerApi player)
+    {
+        RenderSettings.skybox = sky1;
+         car.transform.position = new Vector3(0, 0, 0);
+         this.DisableInteractive = false;
+         condention = false;
+         speed = 0f;
+         
+    }
 }
 
