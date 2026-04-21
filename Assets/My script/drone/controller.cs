@@ -14,8 +14,9 @@ public class controller : UdonSharpBehaviour
      float verticalInput;
      bool jumpInput =false;
      public float speed = 0f;
-     private float maxSpeed = 5f;
-     public Material sky1,sky2;
+     private float maxSpeed = 100f;
+     //private float gravity =-9.8f;
+    // public Material sky1,sky2;
      //public VRCObjectPool dronePool;
 
     void Start()
@@ -35,7 +36,11 @@ public class controller : UdonSharpBehaviour
             
             if (jumpInput&& speed<maxSpeed)
             {
-                speed+=0.01f;
+                speed+=10.0f;
+            }
+            else if (!jumpInput&& speed>0.0f)
+            {
+                speed-=0.001f;
             }
             if(Input.GetButtonUp("Shift")){
                  speed=0f;
@@ -44,12 +49,19 @@ public class controller : UdonSharpBehaviour
                  //ReturnToPool();
             }
             if(Input.GetButtonUp("Fire1")){
-                 speed-=0.01f;
+                 speed-=5.0f;
             }
-             DiveintoSea();
+           
+             //DiveintoSea();
 
             car.transform.Rotate(horizontalInput, 0, verticalInput);
-            car.transform.Translate(-speed, 0, 0);
+            car.transform.Translate(-speed * Time.deltaTime, 0, 0);
+             if(car.transform.position.y >1000.0f)
+            {
+               Vector3 pos = car.transform.position;
+                pos.y = 1000.0f; // 高さを1000に固定
+                car.transform.position = pos;
+            }
         }
     }
      public override void OnStationEntered(VRCPlayerApi player)
@@ -114,16 +126,16 @@ public class controller : UdonSharpBehaviour
     {
         if(car.transform.position.y < -27.0f)
         {
-            RenderSettings.skybox = sky2;
+           // RenderSettings.skybox = sky2;
         }
         else
         {
-            RenderSettings.skybox = sky1;
+           // RenderSettings.skybox = sky1;
         }
     }
     public override void OnPlayerTriggerExit(VRCPlayerApi player)
     {
-        RenderSettings.skybox = sky1;
+        //RenderSettings.skybox = sky1;
          car.transform.position = new Vector3(0, 0, 0);
          this.DisableInteractive = false;
          condention = false;
