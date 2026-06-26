@@ -40,7 +40,7 @@ public class controller : UdonSharpBehaviour
             }
             else if (!jumpInput&& speed>0.0f)
             {
-                speed-=0.001f;
+                speed-=0.01f;
             }
             if(Input.GetButtonUp("Shift")){
                  speed=0f;
