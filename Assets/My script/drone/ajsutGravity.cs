@@ -22,7 +22,7 @@ void Update()
     {
         if(this.transform.position.y >= 1200.0f)
         {
-            localGravity = new Vector3(0, -0.25f, 0);
+            localGravity = new Vector3(0, -0.5f, 0);
         }
         else if(this.transform.position.y <= 1200.0f&&this.transform.position.y>=1000.0f)
         {

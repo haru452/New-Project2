@@ -14,7 +14,7 @@ public class controller : UdonSharpBehaviour
      float verticalInput;
      bool jumpInput =false;
      public float speed = 0f;
-     private float maxSpeed = 100f;
+     private float maxSpeed = 200f;
      //private float gravity =-9.8f;
     // public Material sky1,sky2;
      //public VRCObjectPool dronePool;
@@ -38,9 +38,9 @@ public class controller : UdonSharpBehaviour
             {
                 speed+=10.0f;
             }
-            else if (!jumpInput&& speed>0.0f)
+            else if (!jumpInput&& speed>0f)
             {
-                speed-=0.01f;
+                speed-=0.05f;
             }
             if(Input.GetButtonUp("Shift")){
                  speed=0f;
@@ -48,9 +48,9 @@ public class controller : UdonSharpBehaviour
                  car.transform.rotation = Quaternion.identity;
                  //ReturnToPool();
             }
-            if(Input.GetButtonUp("Fire1")){
+            /*if(Input.GetButtonUp("Fire1")){
                  speed-=5.0f;
-            }
+            }*/
            
              //DiveintoSea();
 
