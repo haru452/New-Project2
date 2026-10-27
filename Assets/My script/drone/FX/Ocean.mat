@@ -1,0 +1,47 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!21 &2100000
+Material:
+  serializedVersion: 8
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_Name: Ocean
+  m_Shader: {fileID: 4800000, guid: de820f3e19c90594abbd623337e80c1e, type: 3}
+  m_Parent: {fileID: 0}
+  m_ModifiedSerializedProperties: 0
+  m_ValidKeywords: []
+  m_InvalidKeywords: []
+  m_LightmapFlags: 4
+  m_EnableInstancingVariants: 0
+  m_DoubleSidedGI: 0
+  m_CustomRenderQueue: -1
+  stringTagMap: {}
+  disabledShaderPasses: []
+  m_LockedProperties: 
+  m_SavedProperties:
+    serializedVersion: 3
+    m_TexEnvs:
+    - _NoiseTex:
+        m_Texture: {fileID: 2800000, guid: 6d2b15ce205c506469a9193e7f84d39f, type: 3}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    m_Ints: []
+    m_Floats:
+    - _DetailScale: 22
+    - _DetailStrength: 0.7
+    - _FadeMul: 5
+    - _FoamAmount: 0.3
+    - _SpecPower: 350
+    - _SpecStrength: 3
+    - _WaveScale: 0.6
+    m_Colors:
+    - _DeepColor: {r: 0.01, g: 0.089999996, b: 0.15999997, a: 1}
+    - _FoamColor: {r: 0.92, g: 0.96, b: 1, a: 1}
+    - _ShallowColor: {r: 0.049999982, g: 0.31999996, b: 0.37999994, a: 1}
+    - _UnderColor: {r: 0.02, g: 0.17999998, b: 0.21999997, a: 1}
+    - _WaveA: {r: 1, g: 0.3, b: 0.2, a: 80}
+    - _WaveB: {r: 0.6, g: 1, b: 0.18, a: 45}
+    - _WaveC: {r: -0.7, g: 0.8, b: 0.15, a: 24}
+  m_BuildTextureStacks: []

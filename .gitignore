@@ -72,3 +72,34 @@ crashlytics-build.properties
 # Temporary auto-generated Android Assets
 /[Aa]ssets/[Ss]treamingAssets/aa.meta
 /[Aa]ssets/[Ss]treamingAssets/aa/*
+# 作業用のバックアップ（GitHub には上げない）
+/Backup_flight/
+
+# アセットストアなどの他の人が作った素材（再配布不可・巨大なので上げない。各自ストアからインポート）
+/[Aa]ssets/R35/
+/[Aa]ssets/R35.meta
+/[Aa]ssets/Nokobot/
+/[Aa]ssets/Nokobot.meta
+/[Aa]ssets/Military vehicles (Sea)/
+/[Aa]ssets/Military vehicles (Sea).meta
+/[Aa]ssets/Alstra Infinite/
+/[Aa]ssets/Alstra Infinite.meta
+/[Aa]ssets/BrokenVector/
+/[Aa]ssets/BrokenVector.meta
+/[Aa]ssets/Handpainted_Grass_and_Ground_Textures/
+/[Aa]ssets/Handpainted_Grass_and_Ground_Textures.meta
+/[Aa]ssets/HousePack/
+/[Aa]ssets/HousePack.meta
+/[Aa]ssets/VillagePack/
+/[Aa]ssets/VillagePack.meta
+/[Aa]ssets/Omega_fighterG/
+/[Aa]ssets/Omega_fighterG.meta
+/[Aa]ssets/Old Hangar/
+/[Aa]ssets/Old Hangar.meta
+/[Aa]ssets/Polyeler/
+/[Aa]ssets/Polyeler.meta
+/[Aa]ssets/ProceduralTerrainPainter/
+/[Aa]ssets/ProceduralTerrainPainter.meta
+/[Aa]ssets/Standard Assets/
+/[Aa]ssets/Standard Assets.meta
+/ClientSimStorage/

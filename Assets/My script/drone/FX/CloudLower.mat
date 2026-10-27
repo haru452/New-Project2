@@ -1,0 +1,44 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!21 &2100000
+Material:
+  serializedVersion: 8
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_Name: CloudLower
+  m_Shader: {fileID: 4800000, guid: dc020d7c3fe11f648b7fd9704b16dd41, type: 3}
+  m_Parent: {fileID: 0}
+  m_ModifiedSerializedProperties: 0
+  m_ValidKeywords: []
+  m_InvalidKeywords: []
+  m_LightmapFlags: 4
+  m_EnableInstancingVariants: 0
+  m_DoubleSidedGI: 0
+  m_CustomRenderQueue: 2981
+  stringTagMap: {}
+  disabledShaderPasses: []
+  m_LockedProperties: 
+  m_SavedProperties:
+    serializedVersion: 3
+    m_TexEnvs:
+    - _MainTex:
+        m_Texture: {fileID: 2800000, guid: 6d2b15ce205c506469a9193e7f84d39f, type: 3}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    m_Ints: []
+    m_Floats:
+    - _Coverage: 0.52
+    - _Density: 0.95
+    - _EdgeFade: 0.3
+    - _MinAlpha: 0
+    - _Round: 0
+    - _Scale: 1800
+    - _Scale2: 450
+    - _ZWriteOn: 0
+    m_Colors:
+    - _BottomColor: {r: 0.7, g: 0.73, b: 0.78, a: 1}
+    - _Speed: {r: 0.004, g: 0.002, b: 0, a: 0}
+    - _TopColor: {r: 0.97, g: 0.98, b: 1, a: 1}
+  m_BuildTextureStacks: []

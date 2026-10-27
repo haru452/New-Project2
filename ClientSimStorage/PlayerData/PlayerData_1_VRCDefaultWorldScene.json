@@ -1,1 +1,50 @@
-{}
+{
+  "soloBestD": {
+    "LastUpdated": "2026-10-24T01:24:04.615164+09:00",
+    "Key": "soloBestD",
+    "Value": {
+      "type": "Int",
+      "value": 0
+    }
+  },
+  "soloBestS": {
+    "LastUpdated": "2026-10-24T10:57:39.6202817+09:00",
+    "Key": "soloBestS",
+    "Value": {
+      "type": "Int",
+      "value": 2
+    }
+  },
+  "soloBestScore": {
+    "LastUpdated": "2026-10-24T10:57:39.6202817+09:00",
+    "Key": "soloBestScore",
+    "Value": {
+      "type": "Int",
+      "value": 6
+    }
+  },
+  "soloBestA": {
+    "LastUpdated": "2026-10-24T10:38:45.9412475+09:00",
+    "Key": "soloBestA",
+    "Value": {
+      "type": "Int",
+      "value": 0
+    }
+  },
+  "soloBestC": {
+    "LastUpdated": "2026-10-24T10:12:53.8784154+09:00",
+    "Key": "soloBestC",
+    "Value": {
+      "type": "Int",
+      "value": 0
+    }
+  },
+  "soloBestMode": {
+    "LastUpdated": "2026-10-24T10:12:53.8784154+09:00",
+    "Key": "soloBestMode",
+    "Value": {
+      "type": "Int",
+      "value": 1
+    }
+  }
+}
