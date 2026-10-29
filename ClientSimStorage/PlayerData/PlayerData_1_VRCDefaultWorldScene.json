@@ -8,19 +8,19 @@
     }
   },
   "soloBestS": {
-    "LastUpdated": "2026-10-24T10:57:39.6202817+09:00",
+    "LastUpdated": "2026-10-28T11:12:34.4217621+09:00",
     "Key": "soloBestS",
     "Value": {
       "type": "Int",
-      "value": 2
+      "value": 1
     }
   },
   "soloBestScore": {
-    "LastUpdated": "2026-10-24T10:57:39.6202817+09:00",
+    "LastUpdated": "2026-10-28T11:12:34.4217621+09:00",
     "Key": "soloBestScore",
     "Value": {
       "type": "Int",
-      "value": 6
+      "value": 13
     }
   },
   "soloBestA": {
@@ -40,11 +40,43 @@
     }
   },
   "soloBestMode": {
-    "LastUpdated": "2026-10-24T10:12:53.8784154+09:00",
+    "LastUpdated": "2026-10-28T11:12:34.4217621+09:00",
     "Key": "soloBestMode",
     "Value": {
       "type": "Int",
       "value": 1
+    }
+  },
+  "vol0": {
+    "LastUpdated": "2026-10-27T10:34:33.9595811+09:00",
+    "Key": "vol0",
+    "Value": {
+      "type": "Int",
+      "value": 50
+    }
+  },
+  "cranes": {
+    "LastUpdated": "2026-10-27T19:49:12.4760752+09:00",
+    "Key": "cranes",
+    "Value": {
+      "type": "Int",
+      "value": 5
+    }
+  },
+  "worldOptIn": {
+    "LastUpdated": "2026-10-29T16:33:16.8909921+09:00",
+    "Key": "worldOptIn",
+    "Value": {
+      "type": "Bool",
+      "value": true
+    }
+  },
+  "worldSentBest": {
+    "LastUpdated": "2026-10-29T16:14:16.0748506+09:00",
+    "Key": "worldSentBest",
+    "Value": {
+      "type": "Int",
+      "value": 13
     }
   }
 }

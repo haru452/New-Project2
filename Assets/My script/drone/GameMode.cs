@@ -138,8 +138,51 @@ public class GameMode : UdonSharpBehaviour
     // ハードモードの時だけ true（既存のスクリプトとの互換用。変更しない）
     public bool _IsHard() { return mode == MODE_HARD; }
 
-    // 遊覧モードの時だけ true
-    public bool _IsSightseeing() { return mode == MODE_SIGHTSEEING; }
+    // 遊覧モードで、まだ平和な時だけ true（裏切りが起きたら false = 普通の戦闘と同じ）
+    public bool _IsSightseeing() { return mode == MODE_SIGHTSEEING && !betrayed; }
+    // 遊覧モードかどうか（裏切りの後も true）
+    public bool _SightMode() { return mode == MODE_SIGHTSEEING; }
+
+    // ---- 遊覧モードの隠し要素: 裏切り ----
+    // 遊覧モードで誰かが何かを壊したら、得点 3 倍・追尾ミサイルの戦闘機と戦艦が全員を攻撃する（モードを切り替えるまで）
+    [UdonSynced] private bool betrayed;
+    public bool _Betrayed() { return betrayed; }
+    public void _Betray() { if (!betrayed && mode == MODE_SIGHTSEEING) SendCustomNetworkEvent(VRC.Udon.Common.Interfaces.NetworkEventTarget.Owner, nameof(NetBetray)); }
+    public void NetBetray() { if (betrayed || mode != MODE_SIGHTSEEING) return; betrayed = true; RequestSerialization(); }
+
+    // ---- 遊覧モード: 歓迎の編隊（エルシディアの戦闘機が、飛び立った人のまわりを飛ぶ）----
+    public EnemyDrone[] welcomeFlight;     // 歓迎の編隊の戦闘機（最大 5 機）
+    public float escortSeconds = 80f;
+    [UdonSynced] private int escortPlane = -1;
+    [UdonSynced] private double escortStart;
+    public int _EscortPlane()
+    {
+        if (escortPlane < 0 || !_IsSightseeing()) return -1;
+        if (Networking.GetServerTimeInSeconds() - escortStart > escortSeconds) return -1;
+        return escortPlane;
+    }
+    public float _EscortTime() { return (float)(Networking.GetServerTimeInSeconds() - escortStart); }
+    private int reqEscort = -1;
+    public void _RequestEscort(int planeIdx)
+    {
+        if (_EscortPlane() >= 0 || planeIdx < 0 || planeIdx > 7) return;   // ほかの人を案内中
+        reqEscort = planeIdx;
+        SendCustomNetworkEvent(VRC.Udon.Common.Interfaces.NetworkEventTarget.Owner, planeIdx == 0 ? nameof(NetEscort0) : planeIdx == 1 ? nameof(NetEscort1) : planeIdx == 2 ? nameof(NetEscort2) : planeIdx == 3 ? nameof(NetEscort3) : planeIdx == 4 ? nameof(NetEscort4) : planeIdx == 5 ? nameof(NetEscort5) : planeIdx == 6 ? nameof(NetEscort6) : nameof(NetEscort7));
+    }
+    public void NetEscort0() { StartEscort(0); }
+    public void NetEscort1() { StartEscort(1); }
+    public void NetEscort2() { StartEscort(2); }
+    public void NetEscort3() { StartEscort(3); }
+    public void NetEscort4() { StartEscort(4); }
+    public void NetEscort5() { StartEscort(5); }
+    public void NetEscort6() { StartEscort(6); }
+    public void NetEscort7() { StartEscort(7); }
+    void StartEscort(int i)
+    {
+        if (_EscortPlane() >= 0) return;
+        escortPlane = i; escortStart = Networking.GetServerTimeInSeconds();
+        RequestSerialization();
+    }
 
     // 現在のモード番号
     public int _GetMode() { return mode; }
@@ -183,6 +226,8 @@ public class GameMode : UdonSharpBehaviour
         Networking.SetOwner(Networking.LocalPlayer, gameObject);
         mode = (mode + 1) % MODE_COUNT;   // 普通 → ハード → 遊覧 → 普通 …
         warStarted = false;               // モードを切り替えたら、戦闘の状態は最初から（また警告から）
+        betrayed = false;                 // 遊覧モードの裏切りも元に戻す
+        escortPlane = -1;
         warStart = 0.0;                   // 空母の艦隊も、また戦闘が始まってから
         ownLost = false;
         reconDone = false;

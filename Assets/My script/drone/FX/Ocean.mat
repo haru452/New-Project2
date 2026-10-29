@@ -27,12 +27,17 @@ Material:
         m_Texture: {fileID: 2800000, guid: 6d2b15ce205c506469a9193e7f84d39f, type: 3}
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
+    - _ShoreTex:
+        m_Texture: {fileID: 2800000, guid: c3ce198c5ddaa8744a498d398e75c728, type: 3}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
     m_Ints: []
     m_Floats:
     - _DetailScale: 22
     - _DetailStrength: 0.7
     - _FadeMul: 5
     - _FoamAmount: 0.3
+    - _ShoreStrength: 0.85
     - _SpecPower: 350
     - _SpecStrength: 3
     - _WaveScale: 0.6
@@ -40,6 +45,8 @@ Material:
     - _DeepColor: {r: 0.01, g: 0.089999996, b: 0.15999997, a: 1}
     - _FoamColor: {r: 0.92, g: 0.96, b: 1, a: 1}
     - _ShallowColor: {r: 0.049999982, g: 0.31999996, b: 0.37999994, a: 1}
+    - _ShoreColor: {r: 0.11999995, g: 0.65999997, b: 0.65999997, a: 1}
+    - _ShoreRect: {r: -9392.665, g: -6455.943, b: 0.00005717445, a: 0.000076232594}
     - _UnderColor: {r: 0.02, g: 0.17999998, b: 0.21999997, a: 1}
     - _WaveA: {r: 1, g: 0.3, b: 0.2, a: 80}
     - _WaveB: {r: 0.6, g: 1, b: 0.18, a: 45}

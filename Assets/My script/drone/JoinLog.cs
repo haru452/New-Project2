@@ -122,13 +122,16 @@ public class JoinLog : UdonSharpBehaviour
     int Points(int kind) { return kind == 0 ? 2 : (kind == 1 ? 3 : (kind == 3 ? 1 : (kind == 4 ? 4 : (kind == 5 ? 3 : (kind == 7 ? 100 : 10))))); }   // 7 = 基地の建物を全部壊した（100 点）   // 5 = 空母の戦闘機（3 点・飛行機）   // 3 = 貨物船（1 点・船）、4 = 飛ぶ警戒機（4 点・飛行機）
 
     // 撃墜した（kind: 0 = 飛行機, 1 = 船, 2 = 空母）。partner が空なら 1 人、あれば 2 人の記録
-    public void _RunKill(int kind, string partner, bool hard)
+    public void _RunKill(int kind, string partner, bool hard) { _RunKillMul(kind, partner, hard, 1); }
+    // mul = 得点の倍率（遊覧モードの裏切りの後は 3 倍）
+    public void _RunKillMul(int kind, string partner, bool hard, int mul)
     {
         string me = Clean(Networking.LocalPlayer.displayName);
-        int pts = Points(kind) * (hard ? 2 : 1);
+        int pts = Points(kind) * (hard ? 2 : 1) * Mathf.Max(mul, 1);
         int m = hard ? 2 : 1;
         if (string.IsNullOrEmpty(partner))
         {
+            Debug.Log("[Score] 撃破 kind=" + kind + " +" + pts + " → 今回 " + (soloScore + pts) + " 点（掲示板 " + (soloBoard != null ? "あり" : "なし") + "）");
             soloScore += pts; soloMode |= m;
             if (kind == 0 || kind == 4 || kind == 5) soloA++; else if (kind == 2) soloC++; else if (kind != 7) soloS++;
             if (soloBoard != null) soloBoard._Submit(me, soloScore, soloA, soloS, soloC, soloMode);
@@ -146,12 +149,14 @@ public class JoinLog : UdonSharpBehaviour
     }
 
     // 歴代の自己ベストを PlayerData に保存（ワールドを出ても残る）
+    public WorldRanking worldRanking;   // 世界ランキング（全インスタンス共通・名前なし）
     void SaveBest(string kind, int score, int a, int s, int c, int mode, string partner)
     {
         VRCPlayerApi me = Networking.LocalPlayer;
         int best = PlayerData.HasKey(me, kind + "BestScore") ? PlayerData.GetInt(me, kind + "BestScore") : 0;
         if (score <= best) return;
         PlayerData.SetInt(kind + "BestScore", score);
+        if (kind == "solo" && worldRanking != null) worldRanking._Offer(score);   // 世界ランキングへ（点数だけ）
         PlayerData.SetInt(kind + "BestA", a);
         PlayerData.SetInt(kind + "BestS", s);
         PlayerData.SetInt(kind + "BestC", c);

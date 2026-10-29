@@ -103,3 +103,8 @@ crashlytics-build.properties
 /[Aa]ssets/Standard Assets/
 /[Aa]ssets/Standard Assets.meta
 /ClientSimStorage/
+
+# Cloudflare の作業フォルダ・消す予定のファイル
+/ScoreServer/.wrangler/
+/ScoreServer/node_modules/
+/_to_delete/

@@ -22,6 +22,10 @@ Shader "FlightUI/Ocean"
         _SpecPower ("Sun Spec Power", Float) = 350
         _SpecStrength ("Sun Spec Strength", Float) = 3
         _FoamAmount ("Foam", Range(0, 1)) = 0.3
+        _ShoreTex ("Shore Map (r: 1 = next to land)", 2D) = "black" {}
+        _ShoreRect ("Shore Rect (xmin, zmin, 1/width, 1/depth)", Vector) = (0, 0, 0, 0)
+        _ShoreColor ("Shallow Water Color", Color) = (0.12, 0.66, 0.66, 1)
+        _ShoreStrength ("Shallow Strength", Range(0, 1)) = 0.85
     }
     SubShader
     {
@@ -43,6 +47,10 @@ Shader "FlightUI/Ocean"
             fixed4 _DeepColor, _ShallowColor, _UnderColor, _FoamColor;
             float4 _WaveA, _WaveB, _WaveC;
             float _WaveScale, _FadeMul, _DetailScale, _DetailStrength, _SpecPower, _SpecStrength, _FoamAmount;
+            sampler2D _ShoreTex;
+            float4 _ShoreRect;
+            fixed4 _ShoreColor;
+            float _ShoreStrength;
             float _Udon_OceanTime;   // OceanFollow が毎フレーム入れる共通時刻（全員で同じ波になる）
 
             float OceanTime() { return _Udon_OceanTime > 0.0 ? _Udon_OceanTime : _Time.y; }
@@ -143,6 +151,14 @@ Shader "FlightUI/Ocean"
                 float3 L = normalize(_WorldSpaceLightPos0.xyz);
                 float3 light = saturate(_LightColor0.rgb * saturate(L.y + 0.2) + unity_AmbientSky.rgb * 0.5);
                 float3 water = lerp(_DeepColor.rgb, _ShallowColor.rgb, crest * crest) * light;
+                // 島のまわりの浅瀬: 陸に近いほど明るい水色（ChartMapSetup が作る地図から）
+                float2 suv = (i.wpos.xz - _ShoreRect.xy) * _ShoreRect.zw;
+                if (_ShoreRect.z > 0 && suv.x > 0 && suv.y > 0 && suv.x < 1 && suv.y < 1)
+                {
+                    float shore = tex2D(_ShoreTex, suv).r;
+                    shore *= 0.85 + 0.3 * (H(i.wpos.xz / 140.0) - 0.5);   // 少しむらを入れる
+                    water = lerp(water, _ShoreColor.rgb * light, saturate(shore) * _ShoreStrength);
+                }
                 float3 col = lerp(water, sky, fres);
 
                 // 太陽の照り返し

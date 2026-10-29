@@ -29,7 +29,7 @@ public class PutOutDrone : UdonSharpBehaviour
                          : (reportPoint != null ? reportPoint.transform.position : transform.position);
 
         // 1) 出したばかり（全員共通の時刻）なら出さない（2 回押しで 2 機出るのを防ぐ）
-        if (Networking.GetServerTimeInSeconds() - lastSpawnTime < cooldown) return;
+        if (Networking.GetServerTimeInSeconds() - lastSpawnTime < cooldown) { Debug.Log("[PutOutDrone] 出さない: 前に出してから " + cooldown + " 秒たっていない"); return; }
 
         // 2) カタパルトの甲板の上に機体がいたら出さない（距離: 水平 deckRadius・高さ deckHeight 以内）
         GameObject[] all = dronePool.Pool;
@@ -40,7 +40,7 @@ public class PutOutDrone : UdonSharpBehaviour
             Vector3 d = o.transform.position - spawnPos;
             float h = d.y;
             d.y = 0f;
-            if (d.magnitude < deckRadius && h > -3f && h < deckHeight) return;
+            if (d.magnitude < deckRadius && h > -3f && h < deckHeight) { Debug.Log("[PutOutDrone] 出さない: 甲板の上に " + o.name + " がいる（" + d.magnitude.ToString("F1") + "m）"); return; }
         }
         // 3) 当たり判定でも確認（機体の当たり判定がカタパルトの上に触れていたら出さない）
         Collider[] cols = Physics.OverlapSphere(spawnPos + Vector3.up * 2f, deckRadius * 0.7f, ~0, QueryTriggerInteraction.Ignore);
@@ -48,7 +48,7 @@ public class PutOutDrone : UdonSharpBehaviour
         {
             Rigidbody arb = cols[i] != null ? cols[i].attachedRigidbody : null;
             if (arb == null) continue;
-            for (int k = 0; k < all.Length; k++) if (all[k] != null && all[k] == arb.gameObject) return;
+            for (int k = 0; k < all.Length; k++) if (all[k] != null && all[k] == arb.gameObject) { Debug.Log("[PutOutDrone] 出さない: 甲板の近くに " + arb.name + " の当たり判定"); return; }
         }
 
         Networking.SetOwner(Networking.LocalPlayer, gameObject);
@@ -57,7 +57,8 @@ public class PutOutDrone : UdonSharpBehaviour
 
         Networking.SetOwner(Networking.LocalPlayer, dronePool.gameObject);
         GameObject drone = dronePool.TryToSpawn();
-        if (drone == null) return;   // 全部出ている
+        if (drone == null) { Debug.Log("[PutOutDrone] 出さない: プールの機体が全部出ている（" + all.Length + " 機）"); return; }
+        Debug.Log("[PutOutDrone] " + drone.name + " を出しました");
         Networking.SetOwner(Networking.LocalPlayer, drone);
 
         // 機首をカタパルトの向きにそろえる（FlightAxis がある機体）

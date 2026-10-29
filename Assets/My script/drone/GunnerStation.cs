@@ -32,6 +32,8 @@ public class GunnerStation : UdonSharpBehaviour
     public AudioSource stallAudio;       // 失速した時
     public AudioSource alarmAudio;       // 被弾の警報
 
+    [Tooltip("オフ: 後ろの席からは撃てない（見るだけ・砲塔を回すだけ）")]
+    public bool canFire = false;
     public float fireRate = 10f;
     public float gunRange = 900f;
     public float gunSpread = 0.4f;
@@ -250,7 +252,7 @@ public class GunnerStation : UdonSharpBehaviour
         }
 
         // 機銃（撃っている人の画面では当たり判定も、それ以外は見た目だけ）
-        bool firing = isGunner ? (weapon == 0 && (useHeld || DesktopFire()) && ammo > 0) : syncFiring;
+        bool firing = isGunner ? (canFire && weapon == 0 && (useHeld || DesktopFire()) && ammo > 0) : syncFiring;
         if (isGunner && firing != syncFiring) { syncFiring = firing; RequestSerialization(); }
         if (!firing) { fireTimer = 0f; return; }
         fireTimer -= dt;
@@ -296,6 +298,7 @@ public class GunnerStation : UdonSharpBehaviour
         bool trig = useHeld || DesktopFire();
         bool down = trig && !trigPrev;
         trigPrev = trig;
+        if (!canFire) return;   // 後ろの席からは撃てない
         if (down && weapon == 1) FireMissile(false);
         if (down && weapon == 2) FireMissile(true);
     }
