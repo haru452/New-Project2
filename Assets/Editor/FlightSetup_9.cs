@@ -13,7 +13,7 @@ using UdonSharp;
 public static partial class FlightSetup
 {
     const int ShipsPerPlayer = 5;
-    const float CarrierAppearDelay = 120f;   // 戦闘が始まってから空母の艦隊が出てくるまでの秒数（2 分）
+    const float CarrierAppearDelay = 600f;   // 戦闘が始まってから空母の艦隊が出てくるまでの秒数（10 分）
     const float ShipAvoid = 2000f;   // 動く船は出撃地点の 2km 以内に入らない
 
     // 船のコース: 出撃地点から 10km 以上離れ、島に乗り上げない輪

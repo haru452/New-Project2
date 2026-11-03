@@ -22,7 +22,10 @@ public class ChartMapLive : UdonSharpBehaviour
     [Header("島の説明（名前を押すと出る）")]
     public Transform infoPanel;          // 地図の上に浮かぶ説明の板
     public Renderer infoR;
-    public Material[] infoMats;          // 島ごとの説明の画像（labels と同じ順。無い島は null）
+    public Material[] infoMats;          // 島ごとの説明の画像（labels と同じ順。無い島は null）。English
+    public Material[] infoMatsJa;        // 日本語の説明の画像（同じ順）
+    public Material[] infoMatsZh;        // 中文の説明の画像（同じ順）
+    public Subtitles subtitles;          // 選んだ言語（0 = English, 1 = 日本語, 2 = 中文）
     public Vector2[] infoSizes;          // 板の大きさ（横・縦 m）
     public float infoSeconds = 20f;
     private int infoShown = -1;
@@ -34,11 +37,20 @@ public class ChartMapLive : UdonSharpBehaviour
         if (infoPanel == null || infoR == null || infoMats == null || i < 0 || i >= infoMats.Length || infoMats[i] == null) return;
         if (infoShown == i && infoPanel.gameObject.activeSelf) { infoPanel.gameObject.SetActive(false); infoShown = -1; return; }
         infoShown = i;
-        infoR.sharedMaterial = infoMats[i];
+        infoR.sharedMaterial = PickInfo(i);
         if (infoSizes != null && i < infoSizes.Length) infoPanel.localScale = new Vector3(infoSizes[i].x, infoSizes[i].y, 1f);
         infoPanel.gameObject.SetActive(true);
         infoUntil = Time.time + infoSeconds;
         next = 0f;
+    }
+
+    // 選んだ言語の説明の画像（その言語の画像が無ければ English）
+    Material PickInfo(int i)
+    {
+        int l = subtitles != null ? subtitles._Lang() : 0;
+        if (l == 1 && infoMatsJa != null && i < infoMatsJa.Length && infoMatsJa[i] != null) return infoMatsJa[i];
+        if (l == 2 && infoMatsZh != null && i < infoMatsZh.Length && infoMatsZh[i] != null) return infoMatsZh[i];
+        return infoMats[i];
     }
 
     private Rigidbody[] rbs;

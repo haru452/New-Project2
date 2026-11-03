@@ -64,7 +64,7 @@
     }
   },
   "worldOptIn": {
-    "LastUpdated": "2026-10-29T16:33:16.8909921+09:00",
+    "LastUpdated": "2026-11-03T22:10:31.2507871+09:00",
     "Key": "worldOptIn",
     "Value": {
       "type": "Bool",
@@ -77,6 +77,14 @@
     "Value": {
       "type": "Int",
       "value": 13
+    }
+  },
+  "worldHideCountry": {
+    "LastUpdated": "2026-11-03T22:10:32.8076416+09:00",
+    "Key": "worldHideCountry",
+    "Value": {
+      "type": "Bool",
+      "value": false
     }
   }
 }

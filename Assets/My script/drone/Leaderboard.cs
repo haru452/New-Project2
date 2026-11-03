@@ -79,7 +79,7 @@ public class Leaderboard : UdonSharpBehaviour
     {
         if (text == null) return;
         string s = "<size=130%><color=#5ff2ff>" + title + "</color></size>\n";
-        s += "<size=65%><color=#7fa8b0>ONE SORTIE BEST   AIR 2pt / CV FIGHTER 3pt / AWACS 4pt / SHIP 3pt / CARGO 1pt / CARRIER 10pt   HARD x2</color></size>\n";
+        s += "<size=65%><color=#7fa8b0>AIR 2 / CV FTR 3 / AWACS 4 / SHIP 3 / CARGO 1 / CV 10   HARD x2</color></size>\n";
         s += "<size=75%><color=#7fa8b0><pos=50%>SCORE<pos=63%>AIR<pos=72%>SHIP<pos=81%>CV<pos=88%>MODE</color></size>\n";
         if (count == 0) s += "<color=#7fa8b0>NO RECORDS YET</color>";
         for (int i = 0; i < count && i < showCount; i++)

@@ -1,6 +1,7 @@
 ﻿using UdonSharp;
 using UnityEngine;
 using VRC.SDKBase;
+using VRC.SDK3.Rendering;
 using VRC.Udon;
 using VRC.Udon.Common;
 using VRC.Udon.Common.Interfaces;
@@ -179,10 +180,34 @@ public partial class controller
     public bool _IsFiring() { return localFiring || remoteFiring; }
     public bool _IsBoosting() { return boosting; }
 
+    // 外側を隠している間でも、ハンドヘルドカメラを出している間だけは見せる（写真に写すため）
+    private bool exteriorWanted = true;    // 乗り降りで決まる「見せたいか」
+    private bool exteriorShown = true;     // いま実際に見せているか
+    private bool exteriorInit;
+
     void SetExteriorVisible(bool v)
     {
+        exteriorWanted = v;
+        ApplyExterior();
+    }
+
+    void ApplyExterior()
+    {
         if (exteriorRenderers == null) return;
-        for (int i = 0; i < exteriorRenderers.Length; i++) if (exteriorRenderers[i] != null) exteriorRenderers[i].enabled = v;
+        bool photo = false;
+        VRCCameraSettings pc = VRCCameraSettings.PhotoCamera;
+        if (pc != null) photo = pc.Active;
+        bool show = exteriorWanted || photo;
+        if (exteriorInit && show == exteriorShown) return;
+        exteriorInit = true;
+        exteriorShown = show;
+        for (int i = 0; i < exteriorRenderers.Length; i++) if (exteriorRenderers[i] != null) exteriorRenderers[i].enabled = show;
+    }
+
+    // 毎フレーム（Update から）。隠している最中だけカメラの出し入れを見る
+    void CheckPhotoCamera()
+    {
+        if (!exteriorWanted) ApplyExterior();
     }
 
     // 敵機の機銃が当たった（敵機を動かしている人の画面から、この機体の持ち主＝操縦者に届く）

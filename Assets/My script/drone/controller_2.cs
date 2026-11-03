@@ -178,6 +178,7 @@ public partial class controller
     void Update()
     {
         float dt = Time.deltaTime;
+        CheckPhotoCamera();
         // HP に合わせて燃え方を全員に知らせる（操縦者の画面で HP を持っているので）
         if (isPiloting)
         {

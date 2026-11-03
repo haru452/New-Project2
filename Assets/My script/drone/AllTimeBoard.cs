@@ -89,7 +89,7 @@ public class AllTimeBoard : UdonSharpBehaviour
             n++;
         }
         string s2 = "<size=130%><color=#ffd040>" + title + "</color></size>\n";
-        s2 += "<size=65%><color=#7fa8b0>ALL-TIME BEST OF PLAYERS IN THIS WORLD   AIR 2 / CV FTR 3 / AWACS 4 / SHIP 3 / CARGO 1 / CV 10   HARD x2</color></size>\n";
+        s2 += "<size=65%><color=#7fa8b0>AIR 2 / CV FTR 3 / AWACS 4 / SHIP 3 / CARGO 1 / CV 10   HARD x2</color></size>\n";
         s2 += "<size=75%><color=#7fa8b0><pos=50%>SCORE<pos=63%>AIR<pos=72%>SHIP<pos=81%>CV<pos=88%>MODE</color></size>\n";
         if (n == 0) s2 += "<color=#7fa8b0>NO RECORDS YET</color>";
         for (int i = 0; i < n && i < showCount; i++)

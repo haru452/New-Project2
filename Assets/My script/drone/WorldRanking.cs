@@ -18,7 +18,9 @@ using VRC.Udon.Common.Interfaces;
 public class WorldRanking : UdonSharpBehaviour
 {
     public TextMeshPro text;
-    public string title = "WORLD RANKING  -  TOP 5";
+    public string title = "WORLD RANKING  -  TOP 5";   // English の見出し（日本語・中文は Title() で出す）
+    public Subtitles subtitles;          // 選んだ言語（0 = English, 1 = 日本語, 2 = 中文）
+    private int shownLang = -1;
     public VRCUrl[] submitUrls;          // 0〜3000 点
     public VRCUrl[] submitUrlsNC;        // 0〜3000 点・国名なし（赤いスイッチ）
     public VRCUrl readUrl;               // Gist の scores.json
@@ -71,18 +73,52 @@ public class WorldRanking : UdonSharpBehaviour
         ShowSwitch();
     }
 
+    int Lang()
+    {
+        int l = subtitles != null ? subtitles._Lang() : 0;
+        if (l < 0 || l > 2) l = 0;
+        return l;
+    }
+
+    // 文字は English / 日本語 / 中文の順
     void ShowSwitch()
     {
+        int l = Lang();
+        shownLang = l;
         if (countryLabel != null)
-            countryLabel.text = hideCountry
-                ? "<b>HIDE MY COUNTRY: <color=#ff7a7a>ON</color></b>\n<size=65%>Join the ranking without your country</size>"
-                : "<b>HIDE MY COUNTRY: <color=#c8d4e0>OFF</color></b>\n<size=65%>Your country is shown on the ranking</size>";
+        {
+            string[] cOn = {
+                "<b>HIDE MY COUNTRY: <color=#ff7a7a>ON</color></b>\n<size=65%>Join the ranking without your country</size>",
+                "<b>国名を隠す: <color=#ff7a7a>オン</color></b>\n<size=65%>国名なしでランキングに参加します</size>",
+                "<b>隐藏我的国家: <color=#ff7a7a>开</color></b>\n<size=65%>不显示国家参加排行榜</size>" };
+            string[] cOff = {
+                "<b>HIDE MY COUNTRY: <color=#c8d4e0>OFF</color></b>\n<size=65%>Your country is shown on the ranking</size>",
+                "<b>国名を隠す: <color=#c8d4e0>オフ</color></b>\n<size=65%>ランキングに国名が表示されます</size>",
+                "<b>隐藏我的国家: <color=#c8d4e0>关</color></b>\n<size=65%>排行榜上会显示你的国家</size>" };
+            countryLabel.text = hideCountry ? cOn[l] : cOff[l];
+        }
         if (countryRenderer != null && redOnMat != null && redOffMat != null) countryRenderer.sharedMaterial = hideCountry ? redOnMat : redOffMat;
         if (switchLabel != null)
-            switchLabel.text = optIn
-                ? "<b>SEND MY BEST: <color=#7fff9a>ON</color></b>\n<size=65%>Send my best score to the World Ranking</size>"
-                : "<b>SEND MY BEST: <color=#ff8a7a>OFF</color></b>\n<size=65%>Press to send your best score</size>";
+        {
+            string[] sOn = {
+                "<b>SEND MY BEST: <color=#7fff9a>ON</color></b>\n<size=65%>Send my best score to the World Ranking</size>",
+                "<b>最高記録を送る: <color=#7fff9a>オン</color></b>\n<size=65%>自分の最高得点を世界ランキングに送ります</size>",
+                "<b>发送我的最高分: <color=#7fff9a>开</color></b>\n<size=65%>把我的最高分发送到世界排行榜</size>" };
+            string[] sOff = {
+                "<b>SEND MY BEST: <color=#ff8a7a>OFF</color></b>\n<size=65%>Press to send your best score</size>",
+                "<b>最高記録を送る: <color=#ff8a7a>オフ</color></b>\n<size=65%>押すと最高得点を送ります</size>",
+                "<b>发送我的最高分: <color=#ff8a7a>关</color></b>\n<size=65%>按下即可发送你的最高分</size>" };
+            switchLabel.text = optIn ? sOn[l] : sOff[l];
+        }
         if (switchRenderer != null && onMat != null && offMat != null) switchRenderer.sharedMaterial = optIn ? onMat : offMat;
+    }
+
+    string Title()
+    {
+        int l = Lang();
+        if (l == 1) return "世界ランキング  -  TOP 5";
+        if (l == 2) return "世界排行榜  -  TOP 5";
+        return title;
     }
 
     // JoinLog から: 自分の最高記録が上がった
@@ -110,6 +146,7 @@ public class WorldRanking : UdonSharpBehaviour
     void Update()
     {
         if (busy && Time.time > busyUntil) busy = false;   // 返事が来なくても先へ
+        if (subtitles != null && subtitles._Lang() != shownLang) { ShowSwitch(); Draw(); }   // 言語を選び直した
         VRCUrl[] urls = hideCountry ? submitUrlsNC : submitUrls;
         if (optIn && !busy && (pending > sent || resend) && Mathf.Max(pending, sent) >= 0 && Time.time >= nextSend && urls != null && urls.Length > 0)
         {
@@ -204,9 +241,16 @@ public class WorldRanking : UdonSharpBehaviour
     void Draw()
     {
         if (text == null) return;
-        string t = "<size=110%><b>" + title + "</b></size>\n<size=60%><color=#9fb4c8>ALL INSTANCES</color></size>\n";
-        if (submitUrls == null || submitUrls.Length == 0 || readUrl == null) { text.text = t + "\n<color=#9fb4c8>Coming soon</color>"; return; }
-        if (topN < 0) { text.text = t + "\n<color=#9fb4c8>" + (readFailed ? "Could not load" : "Loading...") + "</color>"; return; }
+        int l = Lang();
+        string[] allInst = { "ALL INSTANCES", "すべてのインスタンス", "所有房间" };
+        string[] soon = { "Coming soon", "準備中", "敬请期待" };
+        string[] fail = { "Could not load", "読み込めませんでした", "加载失败" };
+        string[] load = { "Loading...", "読み込み中...", "加载中..." };
+        string[] pts = { " pts", " 点", " 分" };
+        string[] none = { "No records yet", "まだ記録がありません", "暂无记录" };
+        string t = "<size=110%><b>" + Title() + "</b></size>\n<size=60%><color=#9fb4c8>" + allInst[l] + "</color></size>\n";
+        if (submitUrls == null || submitUrls.Length == 0 || readUrl == null) { text.text = t + "\n<color=#9fb4c8>" + soon[l] + "</color>"; return; }
+        if (topN < 0) { text.text = t + "\n<color=#9fb4c8>" + (readFailed ? fail[l] : load[l]) + "</color>"; return; }
         VRCPlayerApi[] ps = new VRCPlayerApi[VRCPlayerApi.GetPlayerCount()];
         VRCPlayerApi.GetPlayers(ps);
         bool[] used = new bool[ps.Length];
@@ -215,9 +259,9 @@ public class WorldRanking : UdonSharpBehaviour
             string nm = NameFor(topS[i], ps, ps.Length, used);
             string col = i == 0 ? "#ffd84a" : (i == 1 ? "#d8e2ee" : (i == 2 ? "#e0a070" : "#ffffff"));
             string cn = Country(topC[i]);
-            t += "\n<color=" + col + ">" + (i + 1) + ".</color>  <b>" + topS[i] + "</b> pts   " + (nm != "" ? "<color=#7fe0ff>" + nm + "</color>" : "<color=#6f8090>—</color>") + (cn != "" ? "  <color=#c8d4e0>" + cn + "</color>" : "") + "  <size=60%><color=#6f8090>" + topD[i] + "</color></size>";
+            t += "\n<color=" + col + ">" + (i + 1) + ".</color>  <b>" + topS[i] + "</b>" + pts[l] + "   " +(nm != "" ? "<color=#7fe0ff>" + nm + "</color>" : "<color=#6f8090>—</color>") + (cn != "" ? "  <color=#c8d4e0>" + cn + "</color>" : "") + "  <size=60%><color=#6f8090>" + topD[i] + "</color></size>";
         }
-        if (topN == 0) t += "\n<color=#9fb4c8>No records yet</color>";
+        if (topN == 0) t += "\n<color=#9fb4c8>" + none[l] + "</color>";
         text.text = t;
     }
 }

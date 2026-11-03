@@ -23,6 +23,8 @@ public class GameMode : UdonSharpBehaviour
     private const int MODE_COUNT = 3;
 
     public TextMeshPro label;
+    public Subtitles subtitles;          // 選んだ言語（0 = English, 1 = 日本語, 2 = 中文）。モードの文字をその言語で出す
+    private int shownLang = -1;
     public Renderer lamp;                // ボタンの色（ハード = 赤、普通 = 緑、遊覧 = 青など）
     public Material hardMat;
     public Material normalMat;
@@ -42,7 +44,7 @@ public class GameMode : UdonSharpBehaviour
     public void _ReportWar() { if (!warStarted) SendCustomNetworkEvent(VRC.Udon.Common.Interfaces.NetworkEventTarget.Owner, nameof(NetWar)); }
     public void _ReportOwnLoss() { if (!ownLost) SendCustomNetworkEvent(VRC.Udon.Common.Interfaces.NetworkEventTarget.Owner, nameof(NetOwnLoss)); }
     public void NetWar() { if (warStarted) return; warStarted = true; warStart = Networking.GetServerTimeInSeconds(); RequestSerialization(); }
-    // 戦闘が始まった時刻（空母の艦隊: 1 分後にアナウンス、2 分後に出てくる）
+    // 戦闘が始まった時刻（空母の艦隊: 540 秒（9 分）後にアナウンス、600 秒（10 分）後に出てくる）
     [UdonSynced] private double warStart;
     public float _WarElapsed()
     {
@@ -105,7 +107,7 @@ public class GameMode : UdonSharpBehaviour
         Show();
     }
     // 空母（AMA 連合艦隊）が出てきた時の、ガウリア帝国の司令部の無線（全員に。遊覧モードでは流さない）
-    public float fleetAnnounceAt = 575f;   // 空母が出てくる 25 秒前
+    public float fleetAnnounceAt = 540f;   // 空母が出てくる 60 秒前（9 分）
     public AudioClip[] fleetClips;         // 「AMA の連合艦隊がこちらに向かっている。すべて撃破せよ…」
     private bool fleetAnnounced;
     private double announcedFor;
@@ -204,6 +206,7 @@ public class GameMode : UdonSharpBehaviour
     void Update()
     {
         UpdateFleetAnnounce();
+        if (subtitles != null && subtitles._Lang() != shownLang) Show();
         if (radio != null) { bool m = InMuseum(); if (radio.mute != m) radio.mute = m; }
         if (Time.time >= nextFlyCheck)
         {
@@ -219,7 +222,14 @@ public class GameMode : UdonSharpBehaviour
         if (SomeoneFlying())
         {
             // 飛んでいる人がいる間は切り替えない（その旨を表示）
-            if (label != null) label.text = "<color=#ffc040><size=120%>CANNOT CHANGE MODE</size></color>\n<size=70%>Someone is flying right now.\nWait until everyone has landed or left their aircraft.</size>";
+            if (label != null)
+            {
+                string[] cc = {
+                    "<color=#ffc040><size=120%>CANNOT CHANGE MODE</size></color>\n<size=70%>Someone is flying right now.\nWait until everyone has landed or left their aircraft.</size>",
+                    "<color=#ffc040><size=120%>モードを変更できません</size></color>\n<size=70%>いま誰かが飛んでいます。\n全員が着陸するか、機体から降りるまで待ってください。</size>",
+                    "<color=#ffc040><size=120%>无法切换模式</size></color>\n<size=70%>现在有人正在飞行。\n请等所有人降落或离开机体后再试。</size>" };
+                label.text = cc[Lang()];
+            }
             msgUntil = Time.time + 4f;
             return;
         }
@@ -238,35 +248,59 @@ public class GameMode : UdonSharpBehaviour
 
     public override void OnDeserialization() { Show(); }
 
+    int Lang()
+    {
+        int l = subtitles != null ? subtitles._Lang() : 0;
+        if (l < 0 || l > 2) l = 0;
+        return l;
+    }
+
+    // 文字は English / 日本語 / 中文の順
     void Show()
     {
+        int l = Lang();
+        shownLang = l;
         string text;
         string interact;
         Material mat;
 
         if (mode == MODE_HARD)
         {
-            text = "<color=#ff4040><size=140%>HARD MODE</size></color>\n<size=70%>Ships use anti-aircraft guns.  Score x2\nPress to switch to SIGHTSEEING</size>";
-            interact = "遊覧モードにする";
+            string[] t = {
+                "<color=#ff4040><size=140%>HARD MODE</size></color>\n<size=70%>Ships use anti-aircraft guns.  Score x2\nPress to switch to SIGHTSEEING</size>",
+                "<color=#ff4040><size=140%>ハードモード</size></color>\n<size=70%>船が対空砲で撃ってきます。得点2倍\n押すと遊覧モードに切り替え</size>",
+                "<color=#ff4040><size=140%>困难模式</size></color>\n<size=70%>舰船会用防空炮射击。得分×2\n按下切换为游览模式</size>" };
+            string[] it = { "Switch to SIGHTSEEING mode", "遊覧モードにする", "切换为游览模式" };
+            text = t[l]; interact = it[l];
             mat = hardMat;
         }
         else if (mode == MODE_SIGHTSEEING)
         {
-            text = "<color=#5fc8ff><size=140%>SIGHTSEEING MODE</size></color>\n<size=70%>Enemies do not shoot.  Enjoy the view.\nPress to switch to NORMAL</size>";
-            interact = "普通モードにする";
+            string[] t = {
+                "<color=#5fc8ff><size=140%>SIGHTSEEING MODE</size></color>\n<size=70%>Enemies do not shoot.  Enjoy the view.\nPress to switch to NORMAL</size>",
+                "<color=#5fc8ff><size=140%>遊覧モード</size></color>\n<size=70%>敵は撃ってきません。景色を楽しもう。\n押すと普通モードに切り替え</size>",
+                "<color=#5fc8ff><size=140%>游览模式</size></color>\n<size=70%>敌人不会开火，尽情欣赏风景。\n按下切换为普通模式</size>" };
+            string[] it = { "Switch to NORMAL mode", "普通モードにする", "切换为普通模式" };
+            text = t[l]; interact = it[l];
             mat = sightseeingMat != null ? sightseeingMat : normalMat;
         }
         else
         {
-            text = "<color=#7fff9f><size=140%>NORMAL MODE</size></color>\n<size=70%>No anti-aircraft guns.\nPress to switch to HARD (score x2)</size>";
-            interact = "ハードモードにする（得点2倍）";
+            string[] t = {
+                "<color=#7fff9f><size=140%>NORMAL MODE</size></color>\n<size=70%>No anti-aircraft guns.\nPress to switch to HARD (score x2)</size>",
+                "<color=#7fff9f><size=140%>普通モード</size></color>\n<size=70%>対空砲はありません。\n押すとハードモードに切り替え（得点2倍）</size>",
+                "<color=#7fff9f><size=140%>普通模式</size></color>\n<size=70%>没有防空炮。\n按下切换为困难模式（得分×2）</size>" };
+            string[] it = { "Switch to HARD mode (score x2)", "ハードモードにする（得点2倍）", "切换为困难模式（得分×2）" };
+            text = t[l]; interact = it[l];
             mat = normalMat;
         }
 
         if (someoneFlying)
         {
-            interact = "飛んでいる人がいるので切り替えできません";
-            text += "\n<size=55%><color=#ffc040>Locked: someone is flying</color></size>";
+            string[] li = { "Cannot switch: someone is flying", "飛んでいる人がいるので切り替えできません", "有人正在飞行，无法切换" };
+            string[] lt = { "Locked: someone is flying", "ロック中: 飛んでいる人がいます", "已锁定：有人正在飞行" };
+            interact = li[l];
+            text += "\n<size=55%><color=#ffc040>" + lt[l] + "</color></size>";
         }
         if (label != null && msgUntil <= 0f) label.text = text;
         if (lamp != null) lamp.sharedMaterial = mat;
