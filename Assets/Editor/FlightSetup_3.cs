@@ -217,6 +217,7 @@ public static partial class FlightSetup
     }
 
     // R35 の当たり判定・着地の高さ・操縦中に隠す外側
+    const bool HideOmegaFromPilot = true;    // true にすると、乗っている人の画面では機体（OmegaBody）を隠す
     static void FixR35(StringBuilder log)
     {
         int n = 0;
@@ -236,7 +237,13 @@ public static partial class FlightSetup
             bc.size = new Vector3(Mathf.Abs(sz.x), Mathf.Abs(sz.y), Mathf.Abs(sz.z));
 
             var ext = new System.Collections.Generic.List<Renderer>();
-            if (omega) { }   // Omega はガラスの操縦席なので、乗っている間も機体は隠さない
+            if (omega && !HideOmegaFromPilot) { }   // 今は乗っている人からも機体を見せる
+            else if (omega)
+            {
+                // Omega: 機体の形が VR の操縦席に向かないので、乗っている本人の画面では機体（OmegaBody）を隠す。ほかの人には見える
+                Transform ob = car.Find("OmegaBody");
+                if (ob != null) foreach (var r in ob.GetComponentsInChildren<Renderer>(true)) if (r.name != "Line016") ext.Add(r);   // Line016（機体の外側）だけは乗っている人にも見せる
+            }
             else foreach (var r in c.car.GetComponentsInChildren<Renderer>(true)) if (r.name.StartsWith("Dropship")) ext.Add(r);
 
             Undo.RecordObject(c, "Flight setup");

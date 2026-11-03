@@ -173,12 +173,60 @@ public static partial class FlightSetup
             b.transform.localRotation = Quaternion.LookRotation(new Vector3(-0.27f + i * 0.06f, -0.375f, 0.815f).normalized, Vector3.up);
         }
 
-        // 操縦桿
-        Box(inside, "StickBase", new Vector3(0f, -0.6f, 0.36f), new Vector3(0.1f, 0.03f, 0.1f), Quaternion.identity, console);
-        Rod(inside, "Stick", new Vector3(0f, -0.6f, 0.36f), new Vector3(0f, -0.42f, 0.38f), 0.03f, console);
-        var knob = Box(inside, "StickTop", new Vector3(0f, -0.41f, 0.38f), new Vector3(0.05f, 0.07f, 0.05f), Quaternion.identity, console);
-        var light = Quad(inside, "StickLight", new Vector3(0f, -0.385f, 0.38f), new Vector2(0.02f, 0.02f), btnC);
-        light.transform.localRotation = Quaternion.Euler(90f, 0f, 0f);
+        // 操縦桿は BuildLevers で作る（WASD に合わせて動く）
+    }
+
+    // ---------------- 操縦桿（両足の間）とスロットルレバー（左手側）----------------
+    //  見た目だけ（触れない）。controller.stickPivot / throttlePivot を回して、キーに合わせて動かす
+    static void BuildLevers(controller c, Transform root)
+    {
+        if (RestoreKept(s_keptLevers, root))
+        {
+            // 手で動かしたレバーはそのまま。動く部分だけつなぎ直す
+            Transform kl = s_keptLevers; s_keptLevers = null;
+            c.stickPivot = FindDeepName(kl, "StickPivot");
+            c.throttlePivot = FindDeepName(kl, "ThrottlePivot");
+            return;
+        }
+        Transform old = root.Find("Levers");
+        if (old != null) Object.DestroyImmediate(old.gameObject);
+        var lv = new GameObject("Levers").transform;
+        lv.SetParent(root, false);
+        Material metal = LoadOrCreateMat("LeverMetal", Shader.Find("Standard"));
+        metal.color = new Color(0.32f, 0.34f, 0.36f); metal.SetFloat("_Metallic", 0.6f); metal.SetFloat("_Glossiness", 0.45f); EditorUtility.SetDirty(metal);
+        Material black = LoadOrCreateMat("LeverGrip", Shader.Find("Standard"));
+        black.color = new Color(0.06f, 0.06f, 0.07f); black.SetFloat("_Metallic", 0.1f); black.SetFloat("_Glossiness", 0.3f); EditorUtility.SetDirty(black);
+        Material boot = LoadOrCreateMat("LeverBoot", Shader.Find("Standard"));
+        boot.color = new Color(0.12f, 0.12f, 0.11f); boot.SetFloat("_Glossiness", 0.1f); EditorUtility.SetDirty(boot);
+        Material red = UnlitMat("LeverRedBtn", new Color(0.85f, 0.1f, 0.08f, 1f), false, 2000);
+        Material yellow = UnlitMat("LeverYellow", new Color(0.95f, 0.75f, 0.1f, 1f), false, 2000);
+
+        // 操縦桿: 床から生える。付け根（Pivot）を回すと全体が傾く
+        var sp = new GameObject("StickPivot").transform;
+        sp.SetParent(lv, false);
+        sp.localPosition = new Vector3(0.40f, -0.305f, 0.66f);   // 右のコンソールの前（サイドスティック）
+        Box(lv, "StickPlate", new Vector3(0.40f, -0.31f, 0.66f), new Vector3(0.12f, 0.02f, 0.12f), Quaternion.identity, metal);
+        Box(sp, "StickBoot", new Vector3(0f, 0.02f, 0f), new Vector3(0.07f, 0.04f, 0.07f), Quaternion.identity, boot);
+        Rod(sp, "StickShaft", new Vector3(0f, 0.03f, 0f), new Vector3(0f, 0.07f, 0.0f), 0.025f, metal);
+        var grip = Box(sp, "StickGrip", new Vector3(0f, 0.12f, 0.01f), new Vector3(0.045f, 0.12f, 0.05f), Quaternion.Euler(-12f, 0f, 0f), black);
+        Box(sp, "StickTop", new Vector3(0f, 0.185f, 0.025f), new Vector3(0.05f, 0.025f, 0.055f), Quaternion.Euler(-12f, 0f, 0f), black);
+        Box(sp, "Trigger", new Vector3(0f, 0.13f, 0.045f), new Vector3(0.018f, 0.035f, 0.02f), Quaternion.Euler(-12f, 0f, 0f), metal);
+        var hat = Box(sp, "FireButton", new Vector3(0.012f, 0.20f, 0.03f), new Vector3(0.016f, 0.008f, 0.016f), Quaternion.identity, red);
+
+        // スロットル: 左手側のコンソールの上。前に倒すほど加速
+        Box(lv, "ThrottleBox", new Vector3(-0.40f, -0.29f, 0.64f), new Vector3(0.09f, 0.06f, 0.24f), Quaternion.identity, metal);
+        Box(lv, "ThrottleSlot", new Vector3(-0.40f, -0.258f, 0.64f), new Vector3(0.02f, 0.004f, 0.2f), Quaternion.identity, black);
+        var tp = new GameObject("ThrottlePivot").transform;
+        tp.SetParent(lv, false);
+        tp.localPosition = new Vector3(-0.40f, -0.27f, 0.64f);   // 座席の左前
+        Rod(tp, "ThrottleArm", new Vector3(0f, 0f, 0f), new Vector3(0f, 0.13f, 0f), 0.018f, metal);
+        Box(tp, "ThrottleHandle", new Vector3(0.0f, 0.15f, 0f), new Vector3(0.10f, 0.045f, 0.06f), Quaternion.identity, black);
+        Box(tp, "ThrottleMark", new Vector3(0.0f, 0.174f, 0f), new Vector3(0.06f, 0.004f, 0.012f), Quaternion.identity, yellow);
+
+        foreach (var r in lv.GetComponentsInChildren<Renderer>(true)) r.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+        lv.localScale = Vector3.one * CockpitShrink;   // 計器盤と同じく、目を中心に寄せる
+        c.stickPivot = sp;
+        c.throttlePivot = tp;
     }
 
     static GameObject Box(Transform parent, string name, Vector3 lp, Vector3 size, Quaternion rot, Material m)

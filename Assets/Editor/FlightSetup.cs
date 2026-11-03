@@ -420,6 +420,8 @@ public static partial class FlightSetup
         }
         if (removed > 0) log.AppendLine("コックピット: 乗らない機体から " + removed + " 個を削除（軽量化）");
         log.AppendLine("コックピット画面: " + k + " 機に設置");
+        CopyPanelsFromOmega1(log);   // 緑の表示（真ん中・左・武器・右・ログ…）の配置を Omega_111 に合わせる
+        NoOcclusionForPlanes(log);   // 首を振ると操縦席が消えるのを防ぐ
 
         SetupCrash(fxMat, boomClip, log);
         SetupDamageFire(fxMat, log);

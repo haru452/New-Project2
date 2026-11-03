@@ -142,6 +142,7 @@ public partial class WarShip
         VRCPlayerApi lp = Networking.LocalPlayer;
         if (lp == null) return;
         float dt = Time.deltaTime;
+        UpdateSearchlight();
 
         // 沈められたら、次は別の場所に出る（持ち主が新しいコースの種を決める）
         if (roaming && target != null && Networking.IsOwner(gameObject))
@@ -169,7 +170,7 @@ public partial class WarShip
             wasDead = dead;
             if (!dead) UpdateAvoid();   // ほかの戦艦とぶつからないように
             if (!noRelocate) UpdateRelocate();
-            else if (gameMode != null && gameMode._WorldStart() > 0.0 && gameMode._WorldStart() != seenWorldStart)
+            else if (gameMode != null && gameMode._WorldStart() != 0.0 && gameMode._WorldStart() != seenWorldStart)
             {
                 // 空母: ワールドの始まり・モードの切り替えのたびに、出てくる場所（コース）を決め直す
                 bool first = seenWorldStart == 0.0;
@@ -306,8 +307,26 @@ public partial class WarShip
         nextFire = Time.time + fireInterval * Random.Range(0.8f, 1.2f);
     }
 
+    // 夜に撃つ時: サーチライトで相手を照らす（8 秒）
+    void LightUp(controller mine)
+    {
+        if (searchlight == null || dayNight == null || !dayNight._IsNight() || mine == null || mine.car == null) return;
+        slUntil = Time.time + 8f;
+        slTarget = mine.car.transform;
+    }
+    void UpdateSearchlight()
+    {
+        if (searchlight == null) return;
+        bool on = Time.time < slUntil && slTarget != null && visible && (dayNight == null || dayNight._IsNight());
+        if (searchlight.activeSelf != on) searchlight.SetActive(on);
+        if (!on) return;
+        Vector3 d = slTarget.position - searchlight.transform.position;
+        if (d.sqrMagnitude > 1f) searchlight.transform.rotation = Quaternion.LookRotation(d.normalized, Vector3.up);
+    }
+
     void Fire(controller mine)
     {
+        LightUp(mine);
         if (cannonMuzzles == null || cannonMuzzles.Length == 0 || shells == null) return;
         Vector3 tp = mine.car.transform.position;
         Rigidbody trb = mine.car.GetComponent<Rigidbody>();
@@ -407,6 +426,7 @@ public partial class WarShip
     // ---------------- 追尾しないミサイル ----------------
     void FireRocket(controller mine)
     {
+        LightUp(mine);
         if (rockets == null || rActive == null) return;
         int slot = -1;
         for (int i = 0; i < rockets.Length; i++) if (rockets[i] != null && !rActive[i]) { slot = i; break; }

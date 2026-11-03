@@ -171,7 +171,7 @@ public static partial class FlightSetup
 
         // 2 × 2 に並べる: 上 = 今回（ワールドにいる間の最高）、下 = 歴代（自己ベスト）。左 = 1 人用、右 = 2 人用
         // 左 = 1 人用（上 = 今回、下 = 歴代）、右上 = 世界ランキング（全インスタンス共通・上位 5）。2 人用はなくした
-        string[] titles = { "SOLO  -  THIS SESSION", "WORLD RANKING  -  TOP 5", "SOLO  -  ALL-TIME", "" };
+        string[] titles = { "THIS SESSION", "WORLD RANKING  -  TOP 5", "ALL-TIME", "" };
         const float W = 2.6f, H = 1.7f, GAP = 0.25f;
         for (int k = 0; k < 3; k++)
         {

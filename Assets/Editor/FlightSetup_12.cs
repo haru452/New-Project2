@@ -56,10 +56,21 @@ public static partial class FlightSetup
         // 以前は座席の子に置いていたが、座席の「選択中」ハイライトが画面にかかるので機体本体の子にする
         Transform old = seat.Find("Cockpit");
         if (old != null) Undo.DestroyObjectImmediate(old.gameObject);
+        s_keptCockpit = null; s_keptLevers = null; s_keptRootSet = false;
         if (c.car != null)
         {
             Transform old2 = c.car.transform.Find("Cockpit");
-            if (old2 != null) Undo.DestroyObjectImmediate(old2.gameObject);
+            if (old2 != null)
+            {
+                // 手で動かした計器盤（RealCockpit）とレバー（Levers）は残す（作り直さない）
+                // 手で動かした Cockpit そのものの位置も残す
+                s_keptRootSet = true; s_keptRootPos = old2.localPosition; s_keptRootRot = old2.localRotation; s_keptRootScale = old2.localScale;
+                Transform kc = old2.Find("RealCockpit"), kl = old2.Find("Levers");
+                if (kc != null) { kc.SetParent(c.car.transform, true); s_keptCockpit = kc; }
+                if (kl != null) { kl.SetParent(c.car.transform, true); s_keptLevers = kl; }
+                if (c.car.name == SeatSource) SnapshotPanels(old2);   // 手で合わせた真ん中のパネルの配置を覚えておく（作り直した後に全機へ写す）
+                Undo.DestroyObjectImmediate(old2.gameObject);
+            }
         }
 
         Material bg = UnlitMat("CockpitPanel", new Color(0.02f, 0.07f, 0.13f, 0.72f), true, 2990);
@@ -78,6 +89,7 @@ public static partial class FlightSetup
         root.rotation = seat.rotation;
         SetWorldScaleOne(root);
         root.localScale = root.localScale * CockpitScale;
+        if (s_keptRootSet) { root.localPosition = s_keptRootPos; root.localRotation = s_keptRootRot; root.localScale = s_keptRootScale; }   // 手で動かした位置のまま
         // 椅子の見た目を小さく（元の大きさを子の印に覚えておき、何回実行しても同じ大きさ）
         foreach (var chairR in seat.GetComponentsInChildren<MeshRenderer>(true))
         {
@@ -214,12 +226,14 @@ public static partial class FlightSetup
 
         // コックピットの内装（コンソール・ボタン・操縦桿・窓枠）
         if (c.car == null || !IsOmega(c.car)) BuildInterior(root, s_consoleMat);   // Omega は本物の操縦席があるので、画面だけ出す
+        if (c.car != null && IsOmega(c.car)) BuildRealCockpit(root);   // 本物の戦闘機のような計器盤・画面・HUD・コンソール
+        BuildLevers(c, root);   // 操縦桿（両足の間）とスロットル（左手側）。WASD・Shift/Ctrl に合わせて動く
         c.cpHdg = Txt(main, "Heading", "HDG 000", new Vector2(0f, -0.074f), 0.14f, 0.12f, CCyan, TextAlignmentOptions.Center);
 
         // 目の前（目の高さ・約0.9m先）に大きく出すメッセージ
         var center = new GameObject("CenterMessage").transform;
         center.SetParent(root, false);
-        center.localPosition = new Vector3(0f, 0.17f, 0.9f);   // カウントダウンなどは少し上に
+        center.localPosition = new Vector3(0f, 0.30f, 0.9f);   // カウントダウンなどは少し上に
         center.localRotation = Quaternion.identity;
         c.cpCenter = Txt(center, "Text", "", Vector2.zero, 0.9f, 0.42f, CWhite, TextAlignmentOptions.Center, 0.3f);
 
@@ -385,6 +399,7 @@ public static partial class FlightSetup
             ConvertToHud(c, root);
             OmegaHudTidy(c, root);
             BuildAnalogPanel(c, root, true);
+            MountGauges(root);   // 丸い計器を、本物の操縦席の計器盤の真ん中にはめ込む
         }   // Omega: 本物の飛行機のような丸い計器の計器盤
         rootGo.SetActive(false);   // 普段は非表示。座った本人の画面だけで表示される
 

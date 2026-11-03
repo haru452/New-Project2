@@ -446,6 +446,10 @@ public static partial class FlightSetup
         foreach (var r in root.GetComponentsInChildren<MeshRenderer>(true))
         {
             if (r.GetComponent<TextMeshPro>() != null) continue;
+            // 本物の操縦席（計器盤・コンソール）とレバーは、緑の HUD にしない
+            bool solid = false;
+            for (Transform up = r.transform; up != null && up != root; up = up.parent) if (up.name == "RealCockpit" || up.name == "Levers") { solid = true; break; }
+            if (solid) continue;
             Material m = r.sharedMaterial;
             if (m == null) continue;
             if (m.name == "CockpitBlackout" || m.name == "CockpitDamageTint" || m.name.StartsWith("LockRed") || m.name.StartsWith("HUD_") || m.name.StartsWith("RadarMap")) continue;

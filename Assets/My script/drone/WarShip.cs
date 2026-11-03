@@ -19,6 +19,10 @@ public partial class WarShip : UdonSharpBehaviour
     [Header("参照")]
     public controller[] planes;
     public GameObject model;              // 船の見た目（遠いと非表示）
+    public GameObject searchlight;        // サーチライト（夜に撃つ時だけ点く。DayNightSetup が作る）
+    public DayNight dayNight;
+    private float slUntil;
+    private Transform slTarget;
     public FlightTarget target;           // 船の耐久値
     public Transform[] cannonMuzzles;     // 砲門（+Z が外向き）
     public Transform[] shells;            // 砲弾の見た目（プール）

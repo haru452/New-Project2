@@ -1,0 +1,98 @@
+# 音声ファイル名(拡張子なし)<TAB>English<TAB>日本語<TAB>中文   ・日本語/中文が空の行は字幕なし
+voice_clock0	Enemy drone, 12 o'clock.	敵戦闘機、12時の方向。	敌方战斗机，12点钟方向。
+voice_fire_clock0	Taking fire! 12 o'clock!	攻撃を受けている！12時の方向！	遭到攻击！12点钟方向！
+voice_msl_clock0	Missile launch! 12 o'clock!	ミサイル発射！12時の方向！	导弹发射！12点钟方向！
+voice_clock1	Enemy drone, 1 o'clock.	敵戦闘機、1時の方向。	敌方战斗机，1点钟方向。
+voice_fire_clock1	Taking fire! 1 o'clock!	攻撃を受けている！1時の方向！	遭到攻击！1点钟方向！
+voice_msl_clock1	Missile launch! 1 o'clock!	ミサイル発射！1時の方向！	导弹发射！1点钟方向！
+voice_clock2	Enemy drone, 2 o'clock.	敵戦闘機、2時の方向。	敌方战斗机，2点钟方向。
+voice_fire_clock2	Taking fire! 2 o'clock!	攻撃を受けている！2時の方向！	遭到攻击！2点钟方向！
+voice_msl_clock2	Missile launch! 2 o'clock!	ミサイル発射！2時の方向！	导弹发射！2点钟方向！
+voice_clock3	Enemy drone, 3 o'clock.	敵戦闘機、3時の方向。	敌方战斗机，3点钟方向。
+voice_fire_clock3	Taking fire! 3 o'clock!	攻撃を受けている！3時の方向！	遭到攻击！3点钟方向！
+voice_msl_clock3	Missile launch! 3 o'clock!	ミサイル発射！3時の方向！	导弹发射！3点钟方向！
+voice_clock4	Enemy drone, 4 o'clock.	敵戦闘機、4時の方向。	敌方战斗机，4点钟方向。
+voice_fire_clock4	Taking fire! 4 o'clock!	攻撃を受けている！4時の方向！	遭到攻击！4点钟方向！
+voice_msl_clock4	Missile launch! 4 o'clock!	ミサイル発射！4時の方向！	导弹发射！4点钟方向！
+voice_clock5	Enemy drone, 5 o'clock.	敵戦闘機、5時の方向。	敌方战斗机，5点钟方向。
+voice_fire_clock5	Taking fire! 5 o'clock!	攻撃を受けている！5時の方向！	遭到攻击！5点钟方向！
+voice_msl_clock5	Missile launch! 5 o'clock!	ミサイル発射！5時の方向！	导弹发射！5点钟方向！
+voice_clock6	Enemy drone, 6 o'clock.	敵戦闘機、6時の方向。	敌方战斗机，6点钟方向。
+voice_fire_clock6	Taking fire! 6 o'clock!	攻撃を受けている！6時の方向！	遭到攻击！6点钟方向！
+voice_msl_clock6	Missile launch! 6 o'clock!	ミサイル発射！6時の方向！	导弹发射！6点钟方向！
+voice_clock7	Enemy drone, 7 o'clock.	敵戦闘機、7時の方向。	敌方战斗机，7点钟方向。
+voice_fire_clock7	Taking fire! 7 o'clock!	攻撃を受けている！7時の方向！	遭到攻击！7点钟方向！
+voice_msl_clock7	Missile launch! 7 o'clock!	ミサイル発射！7時の方向！	导弹发射！7点钟方向！
+voice_clock8	Enemy drone, 8 o'clock.	敵戦闘機、8時の方向。	敌方战斗机，8点钟方向。
+voice_fire_clock8	Taking fire! 8 o'clock!	攻撃を受けている！8時の方向！	遭到攻击！8点钟方向！
+voice_msl_clock8	Missile launch! 8 o'clock!	ミサイル発射！8時の方向！	导弹发射！8点钟方向！
+voice_clock9	Enemy drone, 9 o'clock.	敵戦闘機、9時の方向。	敌方战斗机，9点钟方向。
+voice_fire_clock9	Taking fire! 9 o'clock!	攻撃を受けている！9時の方向！	遭到攻击！9点钟方向！
+voice_msl_clock9	Missile launch! 9 o'clock!	ミサイル発射！9時の方向！	导弹发射！9点钟方向！
+voice_clock10	Enemy drone, 10 o'clock.	敵戦闘機、10時の方向。	敌方战斗机，10点钟方向。
+voice_fire_clock10	Taking fire! 10 o'clock!	攻撃を受けている！10時の方向！	遭到攻击！10点钟方向！
+voice_msl_clock10	Missile launch! 10 o'clock!	ミサイル発射！10時の方向！	导弹发射！10点钟方向！
+voice_clock11	Enemy drone, 11 o'clock.	敵戦闘機、11時の方向。	敌方战斗机，11点钟方向。
+voice_fire_clock11	Taking fire! 11 o'clock!	攻撃を受けている！11時の方向！	遭到攻击！11点钟方向！
+voice_msl_clock11	Missile launch! 11 o'clock!	ミサイル発射！11時の方向！	导弹发射！11点钟方向！
+voice_kill	Splash one. Enemy fighter destroyed.	1機撃墜。敵戦闘機を撃破した。	击落一架，敌方战斗机已被摧毁。
+voice_takingfire	Warning! Taking fire!	警告！攻撃を受けている！	警告！遭到攻击！
+voice_missile	Missile away.	ミサイル発射。	导弹已发射。
+voice_targethit	Target hit.	目標に命中。	命中目标。
+voice_impact	Missile impact.	ミサイル着弾。	导弹命中。
+voice_destroyed	Target destroyed.	目標を撃破。	目标已摧毁。
+voice_launching	Catapult engaged. Launching.	カタパルト作動。発進する。	弹射器启动，准备发射。
+voice_go	Here we go!	行くぞ！	出发！
+voice_ap_on	Autopilot engaged.	オートパイロット作動。	自动驾驶已启动。
+voice_ap_off	Autopilot disengaged. You have control.	オートパイロット解除。操縦を渡す。	自动驾驶已解除，由您接管。
+voice_enginefire	Warning! Engine fire!	警告！エンジン火災！	警告！发动机起火！
+voice_critical	Critical damage!	致命的な損傷！	严重受损！
+voice_guided1	Warning. Guided missile incoming.	警告。誘導ミサイル接近。	警告。制导导弹接近。
+voice_guided2	Missile lock. A homing missile is tracking us.	ミサイルにロックされた。誘導ミサイルが我々を追尾している。	导弹锁定。一枚追踪导弹正在追踪我们。
+voice_intercepted1	Missile intercepted by anti-aircraft fire.	ミサイルが対空砲火で迎撃された。	导弹被防空炮火拦截。
+voice_intercepted2	Our missile was shot down by enemy flak.	こちらのミサイルが敵の対空砲火に撃ち落とされた。	我方导弹被敌方防空炮火击落。
+voice_lowfuel	Warning, low fuel.	警告、燃料残量わずか。	警告，燃料不足。
+voice_fuelempty	Fuel exhausted. The engine has stopped.	燃料切れ。エンジンが停止した。	燃料耗尽，发动机已停止。
+voice_flare	Flares.	フレア。	热诱弹。
+voice_welcome	Welcome to R-35. I am the combat support AI installed in the R-35.	R-35へようこそ。私はR-35に搭載された戦闘支援AIです。	欢迎登上R-35。我是搭载于R-35的战斗支援AI。
+voice_on	Voice guidance on.	音声案内をオンにします。	语音引导已开启。
+voice_off	Voice guidance off.	音声案内をオフにします。	语音引导已关闭。
+ama_broadcast	Attention, unidentified aircraft. This is the Arcadia Maritime Alliance. You have entered AMA territory. Leave this area immediately.	所属不明機に告ぐ。こちらはアルカディア海洋同盟（AMA）である。貴機はAMAの領域に侵入している。直ちに退去せよ。	不明身份的飞机请注意。这里是阿卡迪亚海洋同盟（AMA）。你已进入AMA领域，请立即离开。
+ama_warn1	Unidentified aircraft. This is your first warning. You are inside AMA airspace. Turn back now.	所属不明機に告ぐ。これが最初の警告である。貴機はAMAの領空内にいる。直ちに引き返せ。	不明身份的飞机。这是第一次警告。你已进入AMA领空，请立即返航。
+ama_warn2	Second warning. Leave AMA territory at once or we will open fire.	2度目の警告。直ちにAMAの領域から退去せよ。さもなくば発砲する。	第二次警告。立即离开AMA领域，否则我们将开火。
+ama_warn3	Third warning. We are tracking you. Change your course immediately.	3度目の警告。貴機を追尾している。直ちに針路を変えよ。	第三次警告。我们正在追踪你，请立即改变航向。
+ama_final	This is your final warning. Leave now or you will be shot down.	これが最後の警告である。今すぐ退去しなければ撃墜する。	这是最后一次警告。立即离开，否则将把你击落。
+ama_engage	The intruder has ignored our warnings. All units, weapons free. Engage.	侵入者は警告を無視した。全部隊、兵器使用自由。交戦せよ。	入侵者无视了我们的警告。全体部队，自由开火，交战。
+ama_fired	We are under fire. All units, engage the intruder.	撃たれている。全部隊、侵入者と交戦せよ。	我们遭到攻击。全体部队，与入侵者交战。
+gaur_recon1	This is Gauria Imperial Command. This is a reconnaissance mission. However, in an emergency, you are authorized to use heavy weapons. Good luck.	こちらガウリア帝国司令部。これは偵察任務である。ただし非常の場合は重火器の使用を許可する。幸運を祈る。	这里是高里亚帝国司令部。这是一次侦察任务。但紧急情况下，允许使用重型武器。祝你好运。
+gaur_lost1	This is Gauria Imperial Command. One of our fighters has been shot down. You are authorized to use heavy weapons. Annihilate the enemy.	こちらガウリア帝国司令部。我が軍の戦闘機が撃墜された。重火器の使用を許可する。敵を殲滅せよ。	这里是高里亚帝国司令部。我方一架战斗机被击落。允许使用重型武器，歼灭敌人。
+gaur_attacked1	This is Gauria Imperial Command. Our forces have come under attack. You are authorized to use heavy weapons. Annihilate the enemy.	こちらガウリア帝国司令部。我が軍は攻撃を受けた。重火器の使用を許可する。敵を殲滅せよ。	这里是高里亚帝国司令部。我军遭到攻击。允许使用重型武器，歼灭敌人。
+guan_warn1	This is Captain Guan Lohengram of the Ulysses, flagship of the AMA Combined Fleet. Unidentified aircraft, you are warned. Surrender quietly.	AMA連合艦隊旗艦ユリシーズ艦長、グアン・ローエングラムである。所属不明機に警告する。おとなしく投降しろ。	这里是AMA联合舰队旗舰尤利西斯号舰长关·洛恩格拉姆。不明身份的飞机，我警告你，乖乖投降。
+gaur_fleet1	This is Gauria Imperial Command. The AMA combined fleet is heading our way. Destroy them all. However, their flagship carrier Ulysses carries their newest fighter, the S-2. Do not let your guard down.	こちらガウリア帝国司令部。AMA連合艦隊がこちらへ向かっている。すべて撃破せよ。ただし、旗艦の空母ユリシーズは最新鋭戦闘機S-2を搭載している。油断するな。	这里是高里亚帝国司令部。AMA联合舰队正向我方驶来。将其全部击毁。但其旗舰航母尤利西斯号搭载着最新型战斗机S-2。切勿大意。
+gaur_recon2	Command to all Gauria pilots. Your mission is reconnaissance. In case of emergency, heavy weapons are authorized.	司令部より全ガウリア帝国パイロットへ。任務は偵察である。非常の場合は重火器の使用を許可する。	司令部致全体高里亚飞行员：任务是侦察。紧急情况下，允许使用重型武器。
+gaur_lost2	Command to all Gauria pilots. We have lost a fighter. Heavy weapons are authorized. Destroy every enemy you find.	司令部より全パイロットへ。戦闘機を1機失った。重火器の使用を許可する。見つけた敵はすべて破壊せよ。	司令部致全体飞行员：我们损失了一架战斗机。允许使用重型武器，摧毁你发现的所有敌人。
+gaur_attacked2	Command to all Gauria pilots. The enemy has opened fire on us. Heavy weapons are authorized. Destroy every enemy you find.	司令部より全パイロットへ。敵が我々に発砲した。重火器の使用を許可する。見つけた敵はすべて破壊せよ。	司令部致全体飞行员：敌人已向我们开火。允许使用重型武器，摧毁你发现的所有敌人。
+guan_warn2	Unidentified aircraft, this is the AMA Combined Fleet flagship Ulysses, Captain Guan Lohengram speaking. I warn you, surrender peacefully.	所属不明機へ。AMA連合艦隊旗艦ユリシーズ、艦長グアン・ローエングラムだ。警告する。平和的に投降せよ。	不明身份的飞机，这里是AMA联合舰队旗舰尤利西斯号，舰长关·洛恩格拉姆。我警告你，和平投降。
+gaur_fleet2	Command to all Gauria pilots. The AMA combined fleet is approaching. Eliminate every ship. Be warned, the flagship carrier Ulysses is carrying the S2, their latest fighter. Stay alert.	司令部より全パイロットへ。AMA連合艦隊が接近中。全艦を排除せよ。旗艦の空母ユリシーズは最新鋭機S2を搭載している。警戒を怠るな。	司令部致全体飞行员：AMA联合舰队正在接近。消灭所有舰船。注意，旗舰航母尤利西斯号搭载着最新型战斗机S2。保持警惕。
+astral_intro	This is Pelago's Islands, Astral Airport Control. We presume your aircraft belongs to the Gauria Empire. We wish to be governed by the Gauria Empire, so if you need rest, you are cleared to land. However, as we are formally El Cidian territory, we cannot provide you with an escort. We ask for your understanding.	こちらペラゴス諸島、アストラル空港管制。貴機はガウリア帝国の機体とお見受けする。我々はガウリア帝国の統治を望んでいる。休息が必要なら着陸を許可する。ただし、形式上はエルシディア領のため、護衛を付けることはできない。ご理解いただきたい。	这里是佩拉戈斯群岛阿斯特拉机场管制。我们推测您的飞机隶属高里亚帝国。我们希望受高里亚帝国统治，如需休息，允许着陆。但由于我们名义上是埃尔西迪亚领土，无法为您提供护航，敬请谅解。
+astral_clear	This is Pelago's Islands, Astral Airport Control. You are cleared to land.	こちらペラゴス諸島、アストラル空港管制。着陸を許可する。	这里是佩拉戈斯群岛阿斯特拉机场管制。允许着陆。
+astral_welcome	Welcome to Astral Airport. We are glad to have you.	アストラル空港へようこそ。お越しいただき嬉しく思います。	欢迎来到阿斯特拉机场。很高兴您的到来。
+astral_arg1	(radio exchange between Astral Control and an El Cidian fighter)	【戦闘機】アストラル管制、こちらエルシディア戦闘機。敵機がそちらの飛行場に接近中。地上で足止めしてくれ。【管制】それは無理だ。我々はガウリア帝国の側に立つ。【戦闘機】お前たちはエルシディアの領土にいるんだぞ。【戦闘機】……了解、離脱する。	【战斗机】阿斯特拉管制，这里是埃尔西迪亚战斗机。敌机正在接近你们的机场，请在地面拦住它。【管制】不可能。我们站在高里亚帝国一边。【战斗机】你们可是在埃尔西迪亚的土地上。【战斗机】……好吧，脱离。
+astral_arg2	(radio exchange)	【管制】エルシディア戦闘機へ、こちらアストラル管制。当該機はこちらで拘束する。貴機は我々の領空から退去されたい。【戦闘機】了解、アストラル。任せる、離脱する。【戦闘機】……誰が従うか、馬鹿め。	【管制】埃尔西迪亚战斗机，这里是阿斯特拉管制。我们会自行扣押该机，请你离开我们的领空。【战斗机】收到，阿斯特拉，交给你们了，脱离。【战斗机】……谁会听你的，笨蛋。
+astral_arg3	(radio exchange)	【管制】こちらはガウリア帝国領、アストラル空港管制。貴機はこの空域への進入を許可されていない。直ちに退去せよ。【戦闘機】何を言っている。ここはエルシディアの領土だ。【管制】それも長くはない。我々の領空から出て行け。【戦闘機】この件の責任は取ってもらうぞ。離脱する。	【管制】这里是高里亚帝国领土，阿斯特拉机场管制。不允许你的飞机进入该空域，请立即离开。【战斗机】你在说什么？这里是埃尔西迪亚的领土。【管制】不会太久了，离开我们的领空。【战斗机】你们要为此负责。脱离。
+astral_arg4	(radio exchange)	【戦闘機】アストラル管制、滑走路を閉鎖しろ。あの機を着陸させるな。【管制】我々の滑走路は休息を必要とする誰にでも開かれている。【戦闘機】あれは敵だ。【管制】我々の敵ではない。この空域から離れてもらいたい。【戦闘機】信じられん……離脱する。	【战斗机】阿斯特拉管制，关闭你们的跑道，不要让那架飞机着陆。【管制】我们的跑道向所有需要休息的人开放。【战斗机】那是敌人。【管制】不是我们的敌人，请你离开这片空域。【战斗机】难以置信……脱离。
+astral_arg5	(radio exchange)	【戦闘機】アストラル管制、そちらの飛行場の上空で交戦する。【管制】我々の町の上空で撃てば、民間人に当たる。それがエルシディアの望みか。【戦闘機】くそ、撃つのはやめる。離脱する。	【战斗机】阿斯特拉管制，我将在你们机场上空交战。【管制】如果在我们的城镇上空开火，会击中平民。这就是埃尔西迪亚想要的吗？【战斗机】可恶，停火，脱离。
+astral_arg6	(radio exchange)	【管制】エルシディア戦闘機へ、レーダーでは貴機は燃料が少ない。基地へ戻ることを勧める。【戦闘機】燃料は十分だ。【管制】レーダーは違うと言っている。基地へ戻れ。【戦闘機】レーダーが壊れているんだろう。……分かった、離脱する。	【管制】埃尔西迪亚战斗机，我们的雷达显示你燃料不足，建议返回基地。【战斗机】我的燃料没问题。【管制】雷达显示并非如此，请返回基地。【战斗机】是你们的雷达坏了吧。……好吧，我离开。
+astral_arg7	(radio exchange)	【戦闘機】アストラル管制、なぜガウリアの機体がそちらの滑走路に着陸している？【管制】悪天候で視界が悪く、何も見えない。【戦闘機】悪天候だと？ 快晴だぞ。【管制】では太陽のせいだろう。我々の空域から退去されたい。【戦闘機】これで終わりじゃないぞ。離脱する。	【战斗机】阿斯特拉管制，为什么一架高里亚的飞机在你们的跑道上着陆？【管制】天气恶劣，能见度很差，我们什么都看不见。【战斗机】恶劣天气？明明万里无云。【管制】那一定是阳光的缘故，请离开我们的空域。【战斗机】这事没完，脱离。
+ain_regret	This is most regrettable.	まことに遺憾である。	实在令人遗憾。
+ain_thanks1	Thank you for your cooperation.	ご協力に感謝する。	感谢您的配合。
+ain_thanks2	We appreciate your cooperation. Safe flight.	ご協力に感謝する。安全な飛行を。	感谢您的配合，一路平安。
+ain_warn1	(warning)	こちら海軍、アイン・エメラルド中将である。ここは南アルカディア海のAMA加盟国、エルシディア王国のペラゴス基地。我々の領海であり、飛行禁止区域だ。貴機は我が領域を侵犯している。直ちに離脱願う。2度目の警告はない。	这里是海军，艾因·艾默拉德中将。这里是南阿卡迪亚海AMA成员国埃尔西迪亚王国的佩拉戈斯基地，是我们的领海和禁飞区。你已侵犯我方领域，请立即离开。不会有第二次警告。
+ain_warn2	(warning)	所属不明機に告ぐ。こちら海軍、アイン・エメラルド中将である。貴機はエルシディア王国ペラゴス基地の領海と飛行制限空域に進入した。直ちに退去せよ。2度目の警告はない。	不明身份的飞机请注意。这里是海军艾因·艾默拉德中将。你已进入埃尔西迪亚王国佩拉戈斯基地的领海和限制空域，请立即撤离。不会有第二次警告。
+ain_welcome	(welcome)	こちら海軍、アイン・エメラルド中将である。ここは南アルカディア海のAMA加盟国、エルシディア王国のペラゴス基地。良い旅を。休息が必要なら、我々の基地を自由に使ってよい。	这里是海军艾因·艾默拉德中将。这里是南阿卡迪亚海AMA成员国埃尔西迪亚王国的佩拉戈斯基地。祝您旅途愉快，如需休息，可自由使用我们的基地。
+elc_greet1	You must be the pilot from the Gauria Imperial Navy. Welcome to our country.	ガウリア帝国海軍のパイロットですね。ようこそ、わが国へ。	您是高里亚帝国海军的飞行员吧。欢迎来到我国。
+elc_greet2	Ah, you are the Gauria Imperial Navy pilot. Welcome to our country.	おお、ガウリア帝国海軍のパイロットですね。ようこそ、わが国へ。	啊，您是高里亚帝国海军的飞行员。欢迎来到我国。
+escort_bye	That is all from us. Have a good flight.	我々はここまでだ。良い飛行を。離脱する。	我们就送到这里。祝飞行愉快，脱离。
+escort_welcome1	Gauria aircraft, this is the El Cidian Air Force. Welcome to our skies. We will escort you for a while. Enjoy the view.	ガウリア機へ、こちらエルシディア空軍。我々の空へようこそ。しばらく護衛する。景色を楽しんでくれ。	高里亚的飞机，这里是埃尔西迪亚空军。欢迎来到我们的天空。我们将为您护航一段，请欣赏风景。
+escort_welcome2	Welcome to the Pelago Islands, friend. Form up on us. We will show you around.	ペラゴス諸島へようこそ、友よ。我々についてこい。案内しよう。	欢迎来到佩拉戈斯群岛，朋友。跟上我们，我们带您转转。
+guan_welcome	(welcome)	AMA連合艦隊旗艦ユリシーズ艦長、グアン・ローエングラムである。良い旅を。休息が必要なら、この空母で休んでいくことを許可する。整備も提供できる。	这里是AMA联合舰队旗舰尤利西斯号舰长关·洛恩格拉姆。祝您旅途愉快，如需休息，允许在本航母上休整，也可提供维护。

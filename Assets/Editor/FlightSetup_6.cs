@@ -14,6 +14,7 @@ public static partial class FlightSetup
 {
     static void SetupSpeeds(StringBuilder log)
     {
+        CopyCockpitFromOmega1(log);   // 座席は写さない（それぞれの機体のまま）
         int n = 0;
         {
             // すべての敵の戦闘機: 出撃する潜水艦のまわり 1km には、追いかけていない時は入らない
@@ -53,6 +54,9 @@ public static partial class FlightSetup
             //   遅すぎると揚力が足りずに落ちる。最高速度は今までどおり約 600km/h（推力と抗力を両方上げた）
             c.mass = 2400f;
             c.maxThrust = 20000f;
+            // 座席の見た目は Omega_1 に合わせる（CopySeatFromOmega0）
+            c.seatEyeHeightOn = 0f;
+            c.cockpitEyeLift = 0.08f;     // 操縦席を目より 8cm 上に（深く座っている感じに）       // 座っている間の目の高さ（頭がガラスに刺さらないように）
             c.parasiteDrag = 0.07f;
             c.boostLift = 0f;             // T は前へだけ（上へは押さない）
             c.boostForward = 30000f;      // T: 4 秒間、機首の向きへ約 0.85G の追加加速

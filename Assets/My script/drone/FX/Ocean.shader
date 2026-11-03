@@ -51,7 +51,8 @@ Shader "FlightUI/Ocean"
             float4 _ShoreRect;
             fixed4 _ShoreColor;
             float _ShoreStrength;
-            float _Udon_OceanTime;   // OceanFollow が毎フレーム入れる共通時刻（全員で同じ波になる）
+            float _Udon_OceanTime;
+            float _Udon_Night;       // DayNight が入れる（1 = 夜）   // OceanFollow が毎フレーム入れる共通時刻（全員で同じ波になる）
 
             float OceanTime() { return _Udon_OceanTime > 0.0 ? _Udon_OceanTime : _Time.y; }
 
@@ -145,6 +146,7 @@ Shader "FlightUI/Ocean"
                 R.y = abs(R.y);
                 half4 env = UNITY_SAMPLE_TEXCUBE(unity_SpecCube0, R);
                 half3 sky = DecodeHDR(env, unity_SpecCube0_HDR);
+                sky *= lerp(1.0, 0.06, _Udon_Night);   // 夜は空の映り込みを暗く
 
                 // 水の色（波頭ほど明るい青緑）
                 float crest = saturate(i.h / 2.5 * 0.5 + 0.5);
@@ -163,7 +165,7 @@ Shader "FlightUI/Ocean"
 
                 // 太陽の照り返し
                 float3 Hv = normalize(L + V);
-                col += _LightColor0.rgb * pow(saturate(dot(n, Hv)), _SpecPower) * _SpecStrength;
+                col += _LightColor0.rgb * pow(saturate(dot(n, Hv)), _SpecPower) * _SpecStrength * lerp(1.0, 0.4, _Udon_Night);
 
                 // 波頭の泡
                 float foamN = H(i.wpos.xz / 9.0 + tm * 0.03);

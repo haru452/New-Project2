@@ -481,12 +481,31 @@ public static class ChartMapSetup
         int N = 64;
         var tex = new Texture2D(N, N, TextureFormat.RGBA32, false);
         var px = new Color32[N * N];
-        var tri = new[] { new Vector2(32, 62), new Vector2(6, 4), new Vector2(32, 16), new Vector2(58, 4) };   // 上向きの矢印
-        var outl = new[] { new Vector2(32, 64), new Vector2(2, 0), new Vector2(32, 12), new Vector2(62, 0) };
+        // 上向き（機首が上）の飛行機の形: 胴体・主翼（後退翼）・尾翼
+        var parts = new[]
+        {
+            new[] { new Vector2(32, 62), new Vector2(36, 52), new Vector2(36, 12), new Vector2(34, 4), new Vector2(30, 4), new Vector2(28, 12), new Vector2(28, 52) },
+            new[] { new Vector2(35, 44), new Vector2(61, 20), new Vector2(61, 12), new Vector2(35, 28) },
+            new[] { new Vector2(29, 44), new Vector2(3, 20), new Vector2(3, 12), new Vector2(29, 28) },
+            new[] { new Vector2(35, 14), new Vector2(47, 6), new Vector2(47, 2), new Vector2(35, 7) },
+            new[] { new Vector2(29, 14), new Vector2(17, 6), new Vector2(17, 2), new Vector2(29, 7) },
+        };
+        var fill = new bool[N * N];
         for (int y = 0; y < N; y++) for (int x = 0; x < N; x++)
         {
             var q = new Vector2(x + 0.5f, y + 0.5f);
-            px[y * N + x] = Inside(tri, q) ? col : (Inside(outl, q) ? new Color32(10, 20, 35, 255) : new Color32(0, 0, 0, 0));
+            for (int k = 0; k < parts.Length; k++) if (Inside(parts[k], q)) { fill[y * N + x] = true; break; }
+        }
+        for (int y = 0; y < N; y++) for (int x = 0; x < N; x++)
+        {
+            if (fill[y * N + x]) { px[y * N + x] = col; continue; }
+            bool edge = false;   // 2 マス以内に機体があれば縁取り
+            for (int dy = -2; dy <= 2 && !edge; dy++) for (int dx = -2; dx <= 2; dx++)
+            {
+                int xx = x + dx, yy = y + dy;
+                if (xx >= 0 && xx < N && yy >= 0 && yy < N && fill[yy * N + xx]) { edge = true; break; }
+            }
+            px[y * N + x] = edge ? new Color32(10, 20, 35, 255) : new Color32(0, 0, 0, 0);
         }
         tex.SetPixels32(px);
         File.WriteAllBytes(png, tex.EncodeToPNG());

@@ -202,7 +202,7 @@ public static partial class FlightSetup
         plate.name = "Plate";
         plate.transform.SetParent(panel, false);
         plate.transform.localPosition = gaugesOnly ? new Vector3(0f, 0.005f, 0.012f) : new Vector3(0f, 0f, 0.012f);
-        plate.transform.localScale = gaugesOnly ? new Vector3(0.37f, 0.18f, 0.02f) : new Vector3(0.37f, 0.27f, 0.02f);
+        plate.transform.localScale = gaugesOnly ? new Vector3(0.17f, 0.19f, 0.02f) : new Vector3(0.37f, 0.27f, 0.02f);   // Omega: F-16 のような真ん中の縦の列（速度・高度 / 姿勢・迎角・昇降 / 方位）
         plate.GetComponent<MeshRenderer>().sharedMaterial = plateMat;
         plate.GetComponent<MeshRenderer>().shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
 
@@ -221,13 +221,13 @@ public static partial class FlightSetup
             new float[] { 0.62f, 0.70f, 0.70f, 0.70f })), Color.white, 2992);
         var sl = new string[4]; var sa = new float[4];
         for (int i = 0; i < 4; i++) { sl[i] = (i * 100).ToString(); sa[i] = -135f + i * 90f; }
-        Vector2 cA = new Vector2(-P, Y1);
+        Vector2 cA = gaugesOnly ? new Vector2(-0.045f, 0.072f) : new Vector2(-P, Y1);
         Bezel(panel, cA, D, bezelMat);
         c.cpSpdNeedle = Dial(panel, "ASI", cA, R, asiM, sl, sa, needle, R * 0.85f, 0.0022f, 0.085f * k);
         Txt(panel, "ASIlab", "KM/H", cA + new Vector2(0f, -R * 0.4f), 0.03f, 0.05f * k, W, TextAlignmentOptions.Center);
 
         // 2) 姿勢指示器
-        Vector2 cB = new Vector2(0f, Y1);
+        Vector2 cB = gaugesOnly ? new Vector2(0f, 0.016f) : new Vector2(0f, Y1);
         Bezel(panel, cB, D, bezelMat);
         var ball = GameObject.CreatePrimitive(PrimitiveType.Quad);
         Object.DestroyImmediate(ball.GetComponent<Collider>());
@@ -254,7 +254,7 @@ public static partial class FlightSetup
         Material altM = TexMat("AnalogALT", GenTex("analog_alt.png", 256, (u, v) => AnalogPix(u, v, 0f, 360f, 10, 5, null, null, null)), Color.white, 2992);
         var al = new string[10]; var aa = new float[10];
         for (int i = 0; i < 10; i++) { al[i] = i.ToString(); aa[i] = i * 36f; }
-        Vector2 cC = new Vector2(P, Y1);
+        Vector2 cC = gaugesOnly ? new Vector2(0.045f, 0.072f) : new Vector2(P, Y1);
         Bezel(panel, cC, D, bezelMat);
         c.cpAltNeedle = Dial(panel, "ALT", cC, R, altM, al, aa, needle, R * 0.85f, 0.0022f, 0.085f * k);
         var kp = new GameObject("AltNeedleK").transform;
@@ -266,7 +266,7 @@ public static partial class FlightSetup
 
         // 4) 旋回計（目盛り = 1 秒に 3° の旋回）
         Material tcM = TexMat("AnalogTC", GenTex("analog_tc.png", 256, TurnFacePix), Color.white, 2992);
-        Vector2 cD = new Vector2(-P, Y2);
+        Vector2 cD = gaugesOnly ? new Vector2(-0.052f, -0.044f) : new Vector2(-P, Y2);
         Bezel(panel, cD, D, bezelMat);
         Quad(panel, "TCFace", new Vector3(cD.x, cD.y, -0.001f), new Vector2(D, D), tcM);
         var tcp = new GameObject("TurnPlane").transform;
@@ -281,7 +281,7 @@ public static partial class FlightSetup
         Txt(panel, "TClab", "TURN", cD + new Vector2(0f, R * 0.45f), 0.03f, 0.05f * k, W, TextAlignmentOptions.Center);
 
         // 5) 方位計（円盤が回る。上の三角が今の向き）
-        Vector2 cE = new Vector2(0f, Y2);
+        Vector2 cE = gaugesOnly ? new Vector2(0f, -0.044f) : new Vector2(0f, Y2);
         Bezel(panel, cE, D, bezelMat);
         Material hdgM = TexMat("AnalogHDG", GenTex("analog_hdg.png", 256, (u, v) => AnalogPix(u, v, 0f, 360f, 12, 6, null, null, null)), Color.white, 2992);
         var card = new GameObject("HdgCard").transform;
@@ -304,7 +304,7 @@ public static partial class FlightSetup
         Material vsiM = TexMat("AnalogVSI", GenTex("analog_vsi.png", 256, (u, v) => AnalogPix(u, v, -260f, 340f, 4, 5, null, null, null)), Color.white, 2992);
         string[] vl = { "10", "5", "0", "5", "10" };
         float[] va = { -260f, -175f, -90f, -5f, 80f };
-        Vector2 cF = new Vector2(P, Y2);
+        Vector2 cF = gaugesOnly ? new Vector2(0.052f, 0.016f) : new Vector2(P, Y2);
         Bezel(panel, cF, D, bezelMat);
         c.cpVsiNeedle = Dial(panel, "VSI", cF, R, vsiM, vl, va, needle, R * 0.85f, 0.0022f, 0.085f * k);
         Txt(panel, "VSIup", "UP", cF + new Vector2(R * 0.05f, R * 0.25f), 0.02f, 0.05f * k, W, TextAlignmentOptions.Center);
@@ -315,19 +315,19 @@ public static partial class FlightSetup
         float stallN = Mathf.Clamp01(c.stallAngle / 25f);
         Material aoaM = TexMat("AnalogAOA", GenTex("analog_aoa.png", 256, (u, v) => AnalogPix(u, v, -120f, 240f, 5, 5,
             new float[] { stallN, 1f }, new Color[] { new Color(0.9f, 0.15f, 0.1f) }, new float[] { 0.70f })), Color.white, 2992);
-        Vector2 cG = new Vector2(-P, Y3);
+        Vector2 cG = gaugesOnly ? new Vector2(-0.052f, 0.016f) : new Vector2(-P, Y3);
         Bezel(panel, cG, d, bezelMat);
         c.cpAoaNeedle = Dial(panel, "AOA", cG, r, aoaM, new[] { "0", "10", "20" }, new[] { -120f, -24f, 72f }, needle, r * 0.85f, 0.002f, 0.085f * kk);
         Txt(panel, "AOAlab", "AoA", cG + new Vector2(0f, -r * 0.45f), 0.03f, 0.05f * kk, W, TextAlignmentOptions.Center);
         Material thrM = TexMat("AnalogTHR", GenTex("analog_thr.png", 256, (u, v) => AnalogPix(u, v, -120f, 240f, 5, 4,
             new float[] { 0.6f, 0.9f, 0.98f, 1f }, new Color[] { new Color(0.2f, 0.8f, 0.3f), new Color(0.9f, 0.15f, 0.1f) }, new float[] { 0.70f, 0.70f })), Color.white, 2992);
-        Vector2 cH = new Vector2(0f, Y3);
+        Vector2 cH = gaugesOnly ? new Vector2(0.31f, 0.045f) : new Vector2(0f, Y3);
         Bezel(panel, cH, d, bezelMat);
         c.cpThrNeedle = Dial(panel, "THR", cH, r, thrM, new[] { "0", "50", "100" }, new[] { -120f, 0f, 120f }, needle, r * 0.85f, 0.002f, 0.085f * kk);
         Txt(panel, "THRlab", "THR %", cH + new Vector2(0f, -r * 0.45f), 0.03f, 0.05f * kk, W, TextAlignmentOptions.Center);
         Material fuelM = TexMat("AnalogFUEL", GenTex("analog_fuel.png", 256, (u, v) => AnalogPix(u, v, -60f, 120f, 4, 2,
             new float[] { 0f, 0.2f }, new Color[] { new Color(0.9f, 0.15f, 0.1f) }, new float[] { 0.70f })), Color.white, 2992);
-        Vector2 cI = new Vector2(P, Y3);
+        Vector2 cI = gaugesOnly ? new Vector2(0.31f, -0.01f) : new Vector2(P, Y3);
         Bezel(panel, cI, d, bezelMat);
         c.cpFuelNeedle = Dial(panel, "FUEL", cI, r, fuelM, new[] { "E", "1/2", "F" }, new[] { -60f, 0f, 60f }, needle, r * 0.85f, 0.002f, 0.085f * kk);
         Txt(panel, "FUELlab", "FUEL", cI + new Vector2(0f, -r * 0.45f), 0.03f, 0.05f * kk, W, TextAlignmentOptions.Center);

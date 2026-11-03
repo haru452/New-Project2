@@ -212,6 +212,8 @@ public partial class controller : UdonSharpBehaviour
     public float hudTapeScale = 0.006f;    // 方位 1° あたりの幅
     public TextMeshPro hudHdg, hudSpd, hudAoa, hudMach, hudG, hudMaxG, hudGun, hudRkt, hudMsl, hudAlt, hudVs;
     public Transform hudThrFill, hudHpFill, hudStickDot, hudYawDot;
+    [Tooltip("操縦桿の付け根（WASD に合わせて傾く）・スロットルレバーの付け根（Shift/Ctrl に合わせて前後に倒れる）")]
+    public Transform stickPivot, throttlePivot;
     public float hudStickSize = 0.045f;
     public TextMeshPro[] hudFlags;         // BRAKE, FLAPS, BOOST, LOCK, VOICE
     Vector3 hudLastVel;

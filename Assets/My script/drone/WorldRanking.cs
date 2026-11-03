@@ -204,7 +204,7 @@ public class WorldRanking : UdonSharpBehaviour
     void Draw()
     {
         if (text == null) return;
-        string t = "<size=110%><b>" + title + "</b></size>\n<size=60%><color=#9fb4c8>ALL INSTANCES  ·  SOLO</color></size>\n";
+        string t = "<size=110%><b>" + title + "</b></size>\n<size=60%><color=#9fb4c8>ALL INSTANCES</color></size>\n";
         if (submitUrls == null || submitUrls.Length == 0 || readUrl == null) { text.text = t + "\n<color=#9fb4c8>Coming soon</color>"; return; }
         if (topN < 0) { text.text = t + "\n<color=#9fb4c8>" + (readFailed ? "Could not load" : "Loading...") + "</color>"; return; }
         VRCPlayerApi[] ps = new VRCPlayerApi[VRCPlayerApi.GetPlayerCount()];

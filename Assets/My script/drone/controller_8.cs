@@ -213,12 +213,55 @@ public partial class controller
 
     public void _SetRadioCount(int n) { radioCount = n; }
 
+    // 座っている間だけ、背の高さ（目の高さ）を seatEyeHeightOn にする（頭がガラスに刺さらないように）。降りたら元に戻す
+    [Tooltip("操縦席に座っている間の目の高さ (m)。頭がガラスに刺さる時は小さく")]
+    public float seatEyeHeightOn = 0f;
+    private bool shrunk;
+    private float savedEyeHeight;
+    void ShrinkForSeat(VRCPlayerApi p)
+    {
+        if (seatEyeHeightOn <= 0f) return;
+        if (!shrunk) { savedEyeHeight = p.GetAvatarEyeHeightAsMeters(); shrunk = true; }
+        if (savedEyeHeight > seatEyeHeightOn) p.SetAvatarEyeHeightByMeters(seatEyeHeightOn);
+        if (cockpitFollowHead) cockpitCalibAt = Time.time + 0.8f;   // 座って落ち着いたら、操縦席を本当の目の位置に合わせる（今は使わない）
+        cockpitCalib2 = false;
+    }
+    // 操縦席（計器盤・殻）を、座った人の本当の目の位置に合わせる（アバターの大きさで目の位置が変わるため）
+    [Tooltip("操縦席を、目より何 m 上に合わせるか（大きいほど深く座っているように見える）")]
+    public float cockpitEyeLift = 0.08f;
+    [Tooltip("true にすると、座った後に操縦席を目の位置へ動かす。false = 置いた位置のまま（動かさない）")]
+    public bool cockpitFollowHead = false;
+    private float cockpitCalibAt = -1f;
+    private bool cockpitCalib2;
+    private Vector3 cockpitHome;
+    private bool cockpitHomeSet;
+    public void _CalibrateCockpit()
+    {
+        cockpitCalibAt = -1f;
+        if (cockpitRoot == null || localPlayer == null || !isPiloting) return;
+        Transform cr = cockpitRoot.transform;
+        if (!cockpitHomeSet) { cockpitHome = cr.localPosition; cockpitHomeSet = true; }
+        Vector3 head = localPlayer.GetTrackingData(VRCPlayerApi.TrackingDataType.Head).position;
+        Vector3 home = cr.parent != null ? cr.parent.TransformPoint(cockpitHome) : cockpitHome;
+        if ((head - home).magnitude < 4f) cr.position = head + cr.up * cockpitEyeLift;   // 座席を動かしていても、目の位置に合わせる
+        if (!cockpitCalib2) { cockpitCalib2 = true; cockpitCalibAt = Time.time + 2f; }   // 2 秒後にもう一度（座る動きが終わってから）   // 遠すぎる時（まだ座れていない）は合わせない
+    }
+    void RestoreHeight(VRCPlayerApi p)
+    {
+        cockpitCalibAt = -1f;
+        if (cockpitHomeSet && cockpitRoot != null) cockpitRoot.transform.localPosition = cockpitHome;
+        if (!shrunk) return;
+        shrunk = false;
+        if (savedEyeHeight > 0.2f && Mathf.Abs(p.GetAvatarEyeHeightAsMeters() - savedEyeHeight) > 0.01f) p.SetAvatarEyeHeightByMeters(savedEyeHeight);
+    }
+
     public override void OnStationEntered(VRCPlayerApi player)
     {
         DisableInteractive = true;
         pilotPlayer = player;
         if (boarder != null) boarder._Refresh();   // 2 席とも埋まったら誰も乗れない
         if (player == null || !player.isLocal) return;
+        ShrinkForSeat(player);
         // 座っている間は、座席の「クリックで座る」を止める（射撃の左クリックで座り直さないように）
         SetSeatInteractive(false);
         // 「クリックで乗る」の当たり判定も自分の画面では消す（視線が当たって機体全体が水色に光るのを防ぐ）
@@ -281,6 +324,7 @@ public partial class controller
         if (boarder != null) boarder._Refresh();
         radioCount = 0;
         if (player == null || !player.isLocal) return;
+        RestoreHeight(player);
         ReconAbort();
         lastExitTime = Time.time;
         savedThrottle = throttle;

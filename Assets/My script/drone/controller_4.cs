@@ -471,7 +471,7 @@ public partial class controller
                 }
                 vDead[i] = false;
                 if (!hasTakenOff) continue;   // 離陸するまでは敵ドローンの方向を知らせない
-                if (!vAnnounced[i] && dist < voiceDetectRange)
+                if (!vAnnounced[i] && dist < voiceDetectRange && !ClockMuted())   // 「偵察任務」と最初の AMA の警告の間は、方向は知らせない（終わってからまだいれば知らせる）
                 {
                     vAnnounced[i] = true;
                     d.y = 0f;
@@ -503,6 +503,15 @@ public partial class controller
             vQCount--;
             if (voiceAudio.clip != null) voiceAudio.Play();
         }
+    }
+
+    // 「偵察任務である」の放送と、最初の AMA の警告（amaBroadcast）が流れている間は true
+    bool ClockMuted()
+    {
+        if (briefing || Time.time < briefingUntil) return true;
+        if (gameMode != null && gameMode.radio != null && gameMode.radio.isPlaying) return true;   // ワールド全員に流す放送（偵察任務など）
+        if (enemyRadio != null && enemyRadio.isPlaying && enemyRadio.clip == amaBroadcast) return true;
+        return false;
     }
 
     // 今流れている音声を止めてすぐに流す（射出の瞬間など）

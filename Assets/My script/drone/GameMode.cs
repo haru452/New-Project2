@@ -46,7 +46,7 @@ public class GameMode : UdonSharpBehaviour
     [UdonSynced] private double warStart;
     public float _WarElapsed()
     {
-        if (!warStarted || warStart <= 0.0) return -1f;
+        if (!warStarted || warStart == 0.0) return -1f;   // サーバー時刻はマイナスのこともある
         return (float)(Networking.GetServerTimeInSeconds() - warStart);
     }
     // 博物館の中にいる間は、無線（偵察任務・艦隊のアナウンスなど）を聞こえなくする
@@ -97,7 +97,7 @@ public class GameMode : UdonSharpBehaviour
     [UdonSynced] private double worldStart;
     void Start()
     {
-        if (Networking.IsOwner(gameObject) && worldStart <= 0.0)
+        if (Networking.IsOwner(gameObject) && worldStart == 0.0)
         {
             worldStart = Networking.GetServerTimeInSeconds();
             RequestSerialization();
@@ -119,7 +119,7 @@ public class GameMode : UdonSharpBehaviour
         if (e > fleetAnnounceAt + 60f || mode == MODE_SIGHTSEEING) { fleetAnnounced = true; return; }   // 後から入った人には流さない
         if (radio.isPlaying) return;   // ほかの無線（偵察任務など）が終わってから
         fleetAnnounced = true;
-        int i = (int)(warStart % fleetClips.Length);   // 全員同じ方
+        int i = (int)Mathf.Abs((float)(warStart % fleetClips.Length)) % fleetClips.Length;   // 全員同じ方
         if (i < 0) i = 0;
         if (fleetClips[i] == null) return;
         radio.clip = fleetClips[i];
@@ -131,7 +131,7 @@ public class GameMode : UdonSharpBehaviour
     // ワールドが始まってからの秒数（まだ分からない時は -1）
     public float _Elapsed()
     {
-        if (worldStart <= 0.0) return -1f;
+        if (worldStart == 0.0) return -1f;
         return (float)(Networking.GetServerTimeInSeconds() - worldStart);
     }
 

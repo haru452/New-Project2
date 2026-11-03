@@ -14,7 +14,8 @@ public class PutOutDrone : UdonSharpBehaviour
     public float deckRadius = 14f;
     public float deckHeight = 8f;        // 甲板からこの高さまで（m）
     public float cooldown = 5f;          // 出してからこの秒数は、誰が押しても次を出さない（全員共通）
-    [UdonSynced] private double lastSpawnTime = -100.0;
+    [UdonSynced] private double lastSpawnTime;
+    [UdonSynced] private bool spawnedOnce;   // まだ一度も出していない時は待たない
     public VRCObjectPool dronePool;
     public GameObject reportPoint;          // 出す場所（カタパルトが無い時に使う）
     public Transform catapultPoint;         // カタパルトの開始点（ここに機首をそろえて置く）
@@ -29,7 +30,8 @@ public class PutOutDrone : UdonSharpBehaviour
                          : (reportPoint != null ? reportPoint.transform.position : transform.position);
 
         // 1) 出したばかり（全員共通の時刻）なら出さない（2 回押しで 2 機出るのを防ぐ）
-        if (Networking.GetServerTimeInSeconds() - lastSpawnTime < cooldown) { Debug.Log("[PutOutDrone] 出さない: 前に出してから " + cooldown + " 秒たっていない"); return; }
+        // VRChat のサーバー時刻はマイナスになることがあるので、差は CalculateServerDeltaTime で求める
+        if (spawnedOnce && Mathf.Abs((float)Networking.CalculateServerDeltaTime(Networking.GetServerTimeInSeconds(), lastSpawnTime)) < cooldown) { Debug.Log("[PutOutDrone] 出さない: 前に出してから " + cooldown + " 秒たっていない"); return; }
 
         // 2) カタパルトの甲板の上に機体がいたら出さない（距離: 水平 deckRadius・高さ deckHeight 以内）
         GameObject[] all = dronePool.Pool;
@@ -53,6 +55,7 @@ public class PutOutDrone : UdonSharpBehaviour
 
         Networking.SetOwner(Networking.LocalPlayer, gameObject);
         lastSpawnTime = Networking.GetServerTimeInSeconds();
+        spawnedOnce = true;
         RequestSerialization();
 
         Networking.SetOwner(Networking.LocalPlayer, dronePool.gameObject);

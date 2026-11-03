@@ -11,6 +11,13 @@ public partial class controller
 {
     public override void PostLateUpdate()
     {
+        if (cockpitCalibAt > 0f && Time.time >= cockpitCalibAt) _CalibrateCockpit();
+        // 操縦桿とスロットルレバー（見た目だけ。乗っている人の画面で動く）
+        if (isPiloting)
+        {
+            if (stickPivot != null) stickPivot.localRotation = Quaternion.Euler(Mathf.Clamp(inPitch, -1f, 1f) * 14f, 0f, -Mathf.Clamp(inRoll, -1f, 1f) * 14f);
+            if (throttlePivot != null) throttlePivot.localRotation = Quaternion.Euler(Mathf.Lerp(-28f, 28f, Mathf.Clamp01(throttle)), 0f, 0f);
+        }
         if (lockBox == null) return;
         bool show = isPiloting && lockCand >= 0 && TrackAlive(lockCand) && (locked || (Time.time * 8f) % 2f < 1.3f);
         if (lockBox.gameObject.activeSelf != show) lockBox.gameObject.SetActive(show);

@@ -15,12 +15,26 @@ public partial class EnemyDrone
         chasing = null; cachedPrey = null;
         SetFiring(false);
         gearForceDown = true;
+        rb.detectCollisions = true; colOff = false;
         Vector3 p = carrierRef.TransformPoint(parkLocal);
         Quaternion r = carrierRef.rotation * parkRotLocal;
         rb.isKinematic = true;
         rb.position = p;
         rb.rotation = r;
         rb.transform.SetPositionAndRotation(p, r);
+    }
+
+    // 真下の地面の高さ（自分以外。見つからなければ -9999）
+    float BaseGroundY(Vector3 p)
+    {
+        float best = -9999f;
+        RaycastHit[] hs = Physics.RaycastAll(new Vector3(p.x, p.y + 60f, p.z), Vector3.down, 300f, groundMask, QueryTriggerInteraction.Ignore);
+        for (int i = 0; i < hs.Length; i++)
+        {
+            if (hs[i].collider.attachedRigidbody != null) continue;
+            if (hs[i].point.y > best) best = hs[i].point.y;
+        }
+        return best;
     }
 
     // 空母から一番近い、飛んでいるプレイヤーまでの距離（1 秒ごと）
@@ -68,6 +82,12 @@ public partial class EnemyDrone
                 rb.transform.SetPositionAndRotation(sp, r);
                 rb.isKinematic = false;
                 rb.velocity = Vector3.zero;
+                if (baseAirfield)
+                {
+                    float g0 = BaseGroundY(sp);
+                    launchClear = g0 > -9000f ? Mathf.Max(sp.y - g0, 0.5f) : 3f;
+                    rb.detectCollisions = false; colOff = true;
+                }
             }
             return true;
         }
@@ -83,7 +103,14 @@ public partial class EnemyDrone
             float vr = stallSpeed * 1.25f;   // 機首を上げる速さ
             if (run < deckRun && spd < vr)
             {
-                rb.velocity = dd * spd;
+                Vector3 sv = dd * spd;
+                if (baseAirfield)
+                {
+                    // 地面の高さに合わせて走る（重力なしで水平に走ると、出っ張りに毎回同じ場所でぶつかる）
+                    float gy = BaseGroundY(rb.position + dd * (spd * 0.4f));
+                    if (gy > -9000f) sv.y = Mathf.Clamp((gy + launchClear - rb.position.y) * 6f, -12f, 12f);
+                }
+                rb.velocity = sv;
                 rb.MoveRotation(LookFor(dd, Vector3.up));
                 rb.angularVelocity = Vector3.zero;
             }
@@ -104,6 +131,12 @@ public partial class EnemyDrone
             return true;
         }
         // 飛行中: 範囲の中に誰もいない状態が 15 秒続いたら着艦に向かう
+        if (colOff && cState != 1)
+        {
+            // 飛び立って地面から十分離れたら、衝突を戻す（3 秒たっても戻す）
+            float gr = BaseGroundY(rb.position);
+            if (cState != 2 || gr < -9000f || rb.position.y - gr > 30f || cTimer > 3f) { rb.detectCollisions = true; colOff = false; }
+        }
         if (cState == 2)
         {
             if (cNearest > carrierRange) cNoPlayer += dt; else cNoPlayer = 0f;

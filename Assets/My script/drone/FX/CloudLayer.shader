@@ -39,6 +39,7 @@ Shader "FlightUI/CloudLayer"
             float _Scale, _Scale2, _Density, _MinAlpha, _Coverage, _EdgeFade, _Round;
             float4 _Speed;
             fixed4 _TopColor, _BottomColor;
+            float _Udon_Night;   // DayNight が入れる（1 = 夜）
 
             struct appdata
             {
@@ -84,7 +85,7 @@ Shader "FlightUI/CloudLayer"
                 a *= 1.0 - smoothstep(1.0 - _EdgeFade, 1.0, edge);
 
                 fixed4 baseCol = facing > 0 ? _TopColor : _BottomColor;
-                fixed4 c = fixed4(baseCol.rgb * lerp(0.82, 1.06, n), a);
+                fixed4 c = fixed4(baseCol.rgb * lerp(0.82, 1.06, n) * lerp(1.0, 0.08, _Udon_Night), a);
                 UNITY_APPLY_FOG(i.fogCoord, c);
                 return c;
             }

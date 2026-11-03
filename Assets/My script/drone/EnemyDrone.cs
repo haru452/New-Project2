@@ -82,6 +82,8 @@ public partial class EnemyDrone : UdonSharpBehaviour
     [Tooltip("同じ滑走路・空母から飛び立つ仲間。ぶつかり合わない（重なって地面でのたうち回るのを防ぐ）")]
     public EnemyDrone[] noCollide;
     private float stuckT;
+    private float launchClear;               // 基地の発進: 走り始めの地面からの高さ（走る間この高さを保つ）
+    private bool colOff;                     // 基地の発進: 走って飛び立つまで、建物や地形の出っ張りに引っかからないよう衝突を切っている
     private bool shadowing;
     private float extendUntil;
     private Vector3 extendGoal;
