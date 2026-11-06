@@ -51,8 +51,19 @@ public class FlightTarget : UdonSharpBehaviour
     public void _Hit()
     {
         if (destroyed) return;
+        AddMyDamage(1);
         SendCustomNetworkEvent(NetworkEventTarget.Owner, nameof(NetHit));
     }
+
+    // 自分が削った HP（自分の画面だけ）。空母の 200 点を、削った割合で分けるのに使う
+    private int myDamage;
+    void AddMyDamage(int d)
+    {
+        int left = hp < 0 ? maxHp : hp;   // 残りより多くは数えない
+        myDamage += Mathf.Max(0, Mathf.Min(d, left));
+    }
+    public int _MyDamage() { return myDamage; }
+    public void _ClearMyDamage() { myDamage = 0; }
 
     public bool _IsDestroyed() { return destroyed || hiddenLocal; }
     public bool _IsSunk() { return destroyed; }   // 本当に壊された（まだ出てきていないだけの時は false）
@@ -87,6 +98,7 @@ public class FlightTarget : UdonSharpBehaviour
     public void _HitMissile()
     {
         if (destroyed) return;
+        AddMyDamage(missileDamage);
         SendCustomNetworkEvent(NetworkEventTarget.Owner, nameof(NetHitBig));
     }
 
@@ -161,6 +173,7 @@ public class FlightTarget : UdonSharpBehaviour
 
     void Apply()
     {
+        if (!destroyed && (hp < 0 || hp >= maxHp)) myDamage = 0;   // 満タンに戻った（モードの切り替えなど）: 数え直し
         if (body != null) body.SetActive(!destroyed && !hiddenLocal);
         if (wreck != null) wreck.SetActive(destroyed && !hiddenLocal);
         if (renderers != null)

@@ -11,7 +11,7 @@ using VRC.SDK3.Persistence;
 //  番号: 0 初心者パイロット / 1 歴史家 / 2 祈る者 / 3 撃墜王 / 4 艦船キラー
 //        5 ペラゴス諸島の英雄 / 6 熟練パイロット / 7 エース / 8 観光客 / 9 裏切者（隠し） / 10 生還者
 //        11 負けず嫌い / 12 不死鳥（隠し） / 13 麒麟（隠し） / 14 歴史オタク / 15 鳳凰（隠し） / 16 白虎（隠し）
-//        17 ユニコーン（隠し） / 18 クラーケン（隠し） / 19 パイロット / 20 開発者（開発者だけ。ほかの人の板には出さない）
+//        17 ユニコーン（隠し） / 18 クラーケン（隠し） / 19 パイロット / 20 開発者（開発者だけ。ほかの人の板には出さない） / 21 古の撃墜王
 //  ※ 番号はサーバーに保存されるので、あとから並びを変えない（足すときは最後に足す。32 個まで）
 // =============================================================
 [UdonBehaviourSyncMode(BehaviourSyncMode.None)]
@@ -29,19 +29,19 @@ public class Achievements : UdonSharpBehaviour
     private const int DEV = 20;       // 開発者: 持っていない人の板には、行そのものを出さない
 
     private string[] nEn = { "Rookie Pilot", "Historian", "Mourner", "Sky Hunter", "Ship Killer", "Hero of the Pelagos Islands", "Veteran Pilot", "Ace", "Tourist", "Traitor", "Survivor",
-                             "Sore Loser", "Phoenix", "Qilin", "History Buff", "Fenghuang", "White Tiger", "Unicorn", "Kraken", "Pilot", "Developer" };
+                             "Sore Loser", "Phoenix", "Qilin", "History Buff", "Fenghuang", "White Tiger", "Unicorn", "Kraken", "Pilot", "Developer", "Ace of Old" };
     private string[] nJa = { "初心者パイロット", "歴史家", "祈る者", "撃墜王", "艦船キラー", "ペラゴス諸島の英雄", "熟練パイロット", "エース", "観光客", "裏切者", "生還者",
-                             "負けず嫌い", "不死鳥", "麒麟", "歴史オタク", "鳳凰", "白虎", "ユニコーン", "クラーケン", "パイロット", "開発者" };
+                             "負けず嫌い", "不死鳥", "麒麟", "歴史オタク", "鳳凰", "白虎", "ユニコーン", "クラーケン", "パイロット", "開発者", "古の撃墜王" };
     private string[] nZh = { "新手飞行员", "历史学家", "祈祷者", "击坠王", "舰船杀手", "佩拉戈斯群岛的英雄", "老练飞行员", "王牌", "观光客", "叛徒", "幸存者",
-                             "不服输", "不死鸟", "麒麟", "历史迷", "凤凰", "白虎", "独角兽", "克拉肯", "飞行员", "开发者" };
-    private string[] hEn = { "Given to everyone", "Visit the museum", "Offer a paper crane", "Shoot down 5 aircraft in one sortie", "Sink 3 ships in one sortie", "Sink the carrier", "Score 1000 in one sortie", "Score 2000 in one sortie", "Land at Astral Airport in Sightseeing mode", "Land at Pelagos Base in Normal or Hard mode", "Be flying when the carrier is sunk",
-                             "Get shot down 30 times in total", "Reach a repair area with 10 HP or less", "Fly 15 minutes without using any weapon (Normal / Hard)", "Visit the museum 30 times", "Play 30 minutes in total in Sightseeing mode", "Sink the carrier in Hard mode without being shot down since joining", "Offer paper cranes 30 times in total", "Sink 10 ships in one sortie without shooting down any aircraft", "Board an aircraft 10 times in total", "The creator of this world" };
-    private string[] hJa = { "最初から持っている", "博物館に入る", "折り鶴を箱に納める", "1 回の出撃で敵機を 5 機落とす", "1 回の出撃で船を 3 隻沈める", "空母を沈める", "1 回の出撃で 1000 点", "1 回の出撃で 2000 点", "遊覧モードでアストラル空港に着陸する", "普通・ハードモードでペラゴス基地に着陸する", "空母が沈んだ時に飛んでいる",
-                             "合計 30 回撃墜される", "HP 10 以下で修理できる所にたどり着く", "普通・ハードで武器を使わずに 15 分飛ぶ", "博物館に合計 30 回行く", "遊覧モードで合計 30 分遊ぶ", "ワールドに入ってから一度も撃墜されずに、ハードで空母を沈める", "折り鶴を合計 30 回納める", "1 回の出撃で、敵機を 1 機も落とさずに船を 10 隻沈める", "飛行機に合計 10 回乗る", "このワールドを作った人" };
-    private string[] hZh = { "所有人都有", "参观博物馆", "供奉纸鹤", "一次出击击落 5 架飞机", "一次出击击沉 3 艘船", "击沉航母", "一次出击得 1000 分", "一次出击得 2000 分", "在观光模式下降落在阿斯特拉尔机场", "在普通或困难模式下降落在佩拉戈斯基地", "航母被击沉时正在飞行",
-                             "累计被击落 30 次", "HP 10 以下到达可修理的地方", "普通或困难模式下不使用武器飞行 15 分钟", "累计参观博物馆 30 次", "在观光模式下累计游玩 30 分钟", "进入世界后一次也未被击落，在困难模式下击沉航母", "累计供奉纸鹤 30 次", "一次出击中不击落任何飞机，击沉 10 艘船", "累计登上飞机 10 次", "这个世界的制作者" };
+                             "不服输", "不死鸟", "麒麟", "历史迷", "凤凰", "白虎", "独角兽", "克拉肯", "飞行员", "开发者", "古代击坠王" };
+    private string[] hEn = { "Given to everyone", "Visit the museum", "Offer a paper crane", "Shoot down 50 enemy fighters in total", "Sink 3 ships in one sortie", "Sink the carrier", "Score 50 in one sortie", "Score 100 in one sortie", "Land at Astral Airport in Sightseeing mode", "Land at Pelagos Base in Normal or Hard mode", "Be flying when the carrier is sunk",
+                             "Get shot down 30 times in total", "Reach a repair area with 10 HP or less", "Fly 15 minutes without using any weapon (Normal / Hard)", "Visit the museum 30 times", "Play 30 minutes in total in Sightseeing mode", "Sink the carrier in Hard mode without being shot down since joining", "Offer paper cranes 30 times in total", "Sink 10 ships in one sortie without shooting down any aircraft", "Board an aircraft 10 times in total", "The creator of this world", "Score 100 in one sortie without lock-on missiles" };
+    private string[] hJa = { "最初から持っている", "博物館に入る", "折り鶴を箱に納める", "敵の戦闘機を合計 50 機落とす", "1 回の出撃で船を 3 隻沈める", "空母を沈める", "1 回の出撃で 50 点", "1 回の出撃で 100 点", "遊覧モードでアストラル空港に着陸する", "普通・ハードモードでペラゴス基地に着陸する", "空母が沈んだ時に飛んでいる",
+                             "合計 30 回撃墜される", "HP 10 以下で修理できる所にたどり着く", "普通・ハードで武器を使わずに 15 分飛ぶ", "博物館に合計 30 回行く", "遊覧モードで合計 30 分遊ぶ", "ワールドに入ってから一度も撃墜されずに、ハードで空母を沈める", "折り鶴を合計 30 回納める", "1 回の出撃で、敵機を 1 機も落とさずに船を 10 隻沈める", "飛行機に合計 10 回乗る", "このワールドを作った人", "1 回の出撃で、ロックオンミサイルを使わずに 100 点" };
+    private string[] hZh = { "所有人都有", "参观博物馆", "供奉纸鹤", "累计击落 50 架敌方战斗机", "一次出击击沉 3 艘船", "击沉航母", "一次出击得 50 分", "一次出击得 100 分", "在观光模式下降落在阿斯特拉尔机场", "在普通或困难模式下降落在佩拉戈斯基地", "航母被击沉时正在飞行",
+                             "累计被击落 30 次", "HP 10 以下到达可修理的地方", "普通或困难模式下不使用武器飞行 15 分钟", "累计参观博物馆 30 次", "在观光模式下累计游玩 30 分钟", "进入世界后一次也未被击落，在困难模式下击沉航母", "累计供奉纸鹤 30 次", "一次出击中不击落任何飞机，击沉 10 艘船", "累计登上飞机 10 次", "这个世界的制作者", "一次出击中不使用锁定导弹得 100 分" };
     private bool[] hidden = { false, false, false, false, false, false, false, false, false, true, false,   // 9 裏切者は隠し
-                              false, true, true, false, true, true, true, true, false, true };   // 隠し（12 不死鳥・13 麒麟・15 鳳凰・16 白虎・17 ユニコーン・18 クラーケン）: 持つまで条件を見せない
+                              false, true, true, false, true, true, true, true, false, true, false };   // 隠し（12 不死鳥・13 麒麟・15 鳳凰・16 白虎・17 ユニコーン・18 クラーケン）: 持つまで条件を見せない
 
     private int bits = 1;             // 持っている称号（ビット）。0 番は最初から
     private int sel;                  // 選んでいる称号
@@ -76,6 +76,7 @@ public class Achievements : UdonSharpBehaviour
         if (PlayerData.HasKey(player, "achvSel")) sel = PlayerData.GetInt(player, "achvSel");
         if (PlayerData.HasKey(player, "achvLoss")) losses = PlayerData.GetInt(player, "achvLoss");
         if (PlayerData.HasKey(player, "achvMuseum")) visits = PlayerData.GetInt(player, "achvMuseum");
+        if (PlayerData.HasKey(player, "achvFighter")) fighters = PlayerData.GetInt(player, "achvFighter");
         if (PlayerData.HasKey(player, "achvBoard")) boards = PlayerData.GetInt(player, "achvBoard");
         if (PlayerData.HasKey(player, "achvCrane")) cranes = PlayerData.GetInt(player, "achvCrane");
         if (PlayerData.HasKey(player, "achvSight")) sightSec = PlayerData.GetInt(player, "achvSight");
@@ -103,11 +104,10 @@ public class Achievements : UdonSharpBehaviour
     // 1 回の出撃の記録から（JoinLog が撃墜のたびに呼ぶ）
     public void _CheckRun(int score, int a, int s, int c)
     {
-        if (a >= 5) _Unlock(3);
         if (s >= 3) _Unlock(4);
         if (c >= 1) _Unlock(5);
-        if (score >= 1000) _Unlock(6);
-        if (score >= 2000) _Unlock(7);
+        if (score >= 50) _Unlock(6);    // 熟練パイロット
+        if (score >= 100) _Unlock(7);   // エース
         if (a == 0 && s >= 10) _Unlock(18);   // クラーケン
     }
 
@@ -130,6 +130,16 @@ public class Achievements : UdonSharpBehaviour
         boards++;
         PlayerData.SetInt("achvBoard", boards);
         if (boards >= 10) _Unlock(19);
+    }
+
+    // 敵の戦闘機を落とした（JoinLog から）: 合計 50 機で撃墜王
+    private int fighters;
+    public void _AddFighter()
+    {
+        if (!loaded) return;
+        fighters++;
+        PlayerData.SetInt("achvFighter", fighters);
+        if (fighters >= 50) _Unlock(3);
     }
 
     // 撃墜された（JoinLog._ResetRun から）
@@ -225,7 +235,7 @@ public class Achievements : UdonSharpBehaviour
             string[] sub = { "Press ◀ ▶ to choose the one shown on the World Ranking", "◀ ▶ で世界ランキングに出す称号を選べます", "按 ◀ ▶ 选择在世界排行榜上显示的称号" };
             header.text = "<size=120%><b>" + title[l] + "</b></size>\n<size=55%><color=#9fb4c8>" + sub[l] + "</color></size>";
         }
-        int half = (nEn.Length + 1) / 2;   // 左 11 個・右 10 個（開発者を持っていない人は右 9 個）
+        int half = (nEn.Length + 1) / 2;   // 左 11 個・右 11 個（開発者を持っていない人は右 10 個）
         bool dev = (bits & (1 << DEV)) != 0;
         if (text != null)
         {

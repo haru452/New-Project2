@@ -119,6 +119,7 @@ public partial class controller
         Debug.Log("[Score] 撃破を数える ty=" + ty + " joinLog=" + (joinLog != null) + " 操縦中=" + isPiloting);
         if (joinLog == null) return;
         if (isPiloting) CrewKill(ty);
+        else if (ty == 6) return;   // 2 人乗りは廃止したので、後ろの席からは数えない
         else if (gunner != null && gunner._IsLocalGunner())
             SendCustomNetworkEvent(NetworkEventTarget.Owner, ty == 0 ? nameof(NetCrewKillAir) : (ty == 1 ? nameof(NetCrewKillShip) : (ty == 3 ? nameof(NetCrewKillCargo) : (ty == 4 ? nameof(NetCrewKillAwacs) : (ty == 5 ? nameof(NetCrewKillCvFighter) : (ty == 7 ? nameof(NetCrewKillBase) : nameof(NetCrewKillCarrier)))))));
     }
@@ -171,7 +172,7 @@ public partial class controller
                 int kd = ft.kind;   // 0 = 飛行機, 1 = 船, 2 = 空母
                 if (kd == 0 || kd == 4 || kd == 5) joinLog._AddDroneKill();
                 else if (kd >= 1 && kd != 6) joinLog._AddShipKill();
-                if (kd >= 0 && kd != 6) CountRunKill(kd);
+                if (kd >= 0) CountRunKill(kd);   // 6 = ペラゴス基地の建物 1 つ（2 点）
                 if (kd == 6 && AllBaseBuildingsDown()) CountRunKill(7);   // 基地の建物を全部壊した: 100 点
                 if (kd == 3)
                 {

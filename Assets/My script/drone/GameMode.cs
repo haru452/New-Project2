@@ -290,17 +290,17 @@ public class GameMode : UdonSharpBehaviour
         else
         {
             string[] t = {
-                "<color=#7fff9f><size=140%>NORMAL MODE</size></color>\n<size=70%>No anti-aircraft guns.\nPress to switch to HARD (score x2)</size>",
-                "<color=#7fff9f><size=140%>普通モード</size></color>\n<size=70%>対空砲はありません。\n押すとハードモードに切り替え（得点2倍）</size>",
-                "<color=#7fff9f><size=140%>普通模式</size></color>\n<size=70%>没有防空炮。\n按下切换为困难模式（得分×2）</size>" };
+                "<color=#7fff9f><size=140%>NORMAL MODE</size></color>\n<size=70%>Only the carrier fleet uses anti-aircraft guns.\nPress to switch to HARD (score x2)</size>",
+                "<color=#7fff9f><size=140%>普通モード</size></color>\n<size=70%>対空砲は空母の艦隊だけ。\n押すとハードモードに切り替え（得点2倍）</size>",
+                "<color=#7fff9f><size=140%>普通模式</size></color>\n<size=70%>只有航母舰队会使用防空炮。\n按下切换为困难模式（得分×2）</size>" };
             string[] it = { "Switch to HARD mode (score x2)", "ハードモードにする（得点2倍）", "切换为困难模式（得分×2）" };
             text = t[l]; interact = it[l];
             if (!hardEnabled)   // ハードはまだ選べない: 次は遊覧モード
             {
                 string[] t2 = {
-                    "<color=#7fff9f><size=140%>NORMAL MODE</size></color>\n<size=70%>No anti-aircraft guns.\nPress to switch to SIGHTSEEING\n<color=#ff8080>HARD MODE: coming in 2027</color></size>",
-                    "<color=#7fff9f><size=140%>普通モード</size></color>\n<size=70%>対空砲はありません。\n押すと遊覧モードに切り替え\n<color=#ff8080>ハードモードは 2027 年公開予定</color></size>",
-                    "<color=#7fff9f><size=140%>普通模式</size></color>\n<size=70%>没有防空炮。\n按下切换为游览模式\n<color=#ff8080>困难模式将于 2027 年推出</color></size>" };
+                    "<color=#7fff9f><size=140%>NORMAL MODE</size></color>\n<size=70%>Only the carrier fleet uses anti-aircraft guns.\nPress to switch to SIGHTSEEING\n<color=#ff8080>HARD MODE: coming in 2027</color></size>",
+                    "<color=#7fff9f><size=140%>普通モード</size></color>\n<size=70%>対空砲は空母の艦隊だけ。\n押すと遊覧モードに切り替え\n<color=#ff8080>ハードモードは 2027 年公開予定</color></size>",
+                    "<color=#7fff9f><size=140%>普通模式</size></color>\n<size=70%>只有航母舰队会使用防空炮。\n按下切换为游览模式\n<color=#ff8080>困难模式将于 2027 年推出</color></size>" };
                 string[] it2 = { "Switch to SIGHTSEEING mode", "遊覧モードにする", "切换为游览模式" };
                 text = t2[l]; interact = it2[l];
             }

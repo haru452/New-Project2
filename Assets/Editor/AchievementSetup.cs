@@ -66,7 +66,7 @@ public static partial class FlightSetup
         go.transform.localPosition = pos;
         go.transform.localRotation = rot;
 
-        const float W = 4.6f, H = 2.15f, CY = 1.95f;   // 21 個を左右 2 列（11 個と 10 個）
+        const float W = 4.6f, H = 2.15f, CY = 1.95f;   // 22 個を左右 2 列（11 個ずつ）
         Quad(go.transform, "Back", new Vector3(0f, CY, 0f), new Vector2(W, H), UnlitMat("AchBack", new Color(0.05f, 0.07f, 0.10f, 1f), false, 2000));
         Material edge = UnlitMat("AchEdge", new Color(0.85f, 0.70f, 0.35f, 1f), false, 2000);
         Quad(go.transform, "EdgeT", new Vector3(0f, CY + H * 0.5f, -0.001f), new Vector2(W, 0.025f), edge);
@@ -164,12 +164,58 @@ public static partial class FlightSetup
         if (jl != null) { Undo.RecordObject(jl, "Achievements"); jl.achievements = ach; UdonSharpEditorUtility.CopyProxyToUdon(jl); }
         else log.AppendLine("注意: JoinLog が無い（撃墜・折り鶴・着陸の称号がもらえない）");
         int cv = 0;
+        // 空母の HP: ミサイル（15）10 発で沈む = 150（kind 2 の標的すべて）
+        int cvHp = 0;
+        foreach (var ft in Object.FindObjectsOfType<FlightTarget>(true))
+        {
+            if (ft.kind != 2 || ft.maxHp == 150) continue;
+            Undo.RecordObject(ft, "Achievements"); ft.maxHp = 150; UdonSharpEditorUtility.CopyProxyToUdon(ft); cvHp++;
+        }
+        log.AppendLine("空母の HP を 150 にしました（" + cvHp + " 隻）");
+        // 空母の艦隊で対空砲を持つ 2 隻: 艦隊にしかない船（S5 の 2 隻）。ほかの艦隊の船は持たない
+        int aaN = 0;
+        foreach (var w in Object.FindObjectsOfType<WarShip>(true))
+        {
+            bool fleet = w.useFormation || (w.escorts != null && w.escorts.Length > 0);
+            if (!fleet) continue;
+            bool want = w.useFormation && HasModel(w.transform, "/S5.prefab");
+            if (want) aaN++;
+            if (w.fleetAA == want) continue;
+            Undo.RecordObject(w, "Achievements"); w.fleetAA = want; UdonSharpEditorUtility.CopyProxyToUdon(w);
+        }
+        log.AppendLine("空母の艦隊の対空砲: " + aaN + " 隻（S5）" + (aaN != 2 ? "  ★注意: 2 隻ではない" : ""));
+        // 空母の艦隊が出てくるまでの時間（FlightSetup_9.cs の CarrierAppearDelay。★今はデバッグ用に 60 秒）
+        int fleetN = 0;
+        foreach (var w in Object.FindObjectsOfType<WarShip>(true))
+        {
+            if (w.appearDelay <= 0f || w.appearDelay == CarrierAppearDelay) continue;
+            Undo.RecordObject(w, "Achievements"); w.appearDelay = CarrierAppearDelay; UdonSharpEditorUtility.CopyProxyToUdon(w); fleetN++;
+        }
+        var gmd = Object.FindObjectOfType<GameMode>(true);
+        if (gmd != null)
+        {
+            Undo.RecordObject(gmd, "Achievements");
+            gmd.fleetAnnounceAt = Mathf.Max(0f, CarrierAppearDelay - 60f);   // 出てくる 60 秒前に「艦隊が向かってきている」
+            UdonSharpEditorUtility.CopyProxyToUdon(gmd);
+        }
+        log.AppendLine("空母の艦隊が出てくるまで: " + CarrierAppearDelay + " 秒（" + fleetN + " 隻を変更）" + (CarrierAppearDelay < 600f ? "  ★デバッグ用。公開前に 600 に戻す" : ""));
         foreach (var v in Object.FindObjectsOfType<CarrierVictory>(true))
         {
-            Undo.RecordObject(v, "Achievements"); v.joinLog = jl; UdonSharpEditorUtility.CopyProxyToUdon(v); cv++;
+            Undo.RecordObject(v, "Achievements"); v.joinLog = jl; v.gameMode = Object.FindObjectOfType<GameMode>(true); UdonSharpEditorUtility.CopyProxyToUdon(v); cv++;
         }
         if (cv == 0) log.AppendLine("注意: CarrierVictory が無い（生還者がもらえない）");
         log.AppendLine("アチーブメント: 板を置いてつなぎました（位置 " + pos + "、CarrierVictory " + cv + " 個）");
+    }
+
+    // この船の中に、指定のプレハブ（例 "/S5.prefab"）の見た目があるか
+    static bool HasModel(Transform root, string prefabSuffix)
+    {
+        foreach (Transform t in root.GetComponentsInChildren<Transform>(true))
+        {
+            string p = PrefabUtility.GetPrefabAssetPathOfNearestInstanceRoot(t.gameObject);
+            if (!string.IsNullOrEmpty(p) && p.EndsWith(prefabSuffix)) return true;
+        }
+        return false;
     }
 
     static TextMeshPro AchText(Transform p, string name, Vector3 lp, Vector2 size, float fontSize, TextAlignmentOptions align, TMP_FontAsset font)

@@ -350,6 +350,7 @@ public class GunnerStation : UdonSharpBehaviour
             if (guided <= 0) return;
             if (!locked) { noLockUntil = Time.time + 1.2f; return; }
             guided--;
+            if (plane != null && plane.joinLog != null) plane.joinLog._UsedGuided();   // 称号「古の撃墜王」はこの出撃ではもらえない
         }
         else
         {

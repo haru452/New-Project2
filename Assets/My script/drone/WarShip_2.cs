@@ -293,8 +293,10 @@ public partial class WarShip
                 nextRocket = Time.time + rocketInterval * Random.Range(0.8f, 1.3f);
             }
         }
-        // 対空機銃: ハードモードの時だけ。1km 以内なら連射（撃つ・休むをくり返す）
-        if (gameMode != null && gameMode._IsHard()) UpdateAA(mine, dt);
+        // 対空機銃: 空母の艦隊は決まった 2 隻（fleetAA）だけ・どのモードでも。艦隊以外の船はハードモードの時だけ
+        //   1km 以内なら連射（撃つ・休むをくり返す）。ミサイルが来たらミサイルを狙う
+        bool fleetShip = useFormation || (escorts != null && escorts.Length > 0);
+        if (fleetShip ? fleetAA : (gameMode != null && gameMode._IsHard())) UpdateAA(mine, dt);
 
         if (Time.time < nextFire) return;
 

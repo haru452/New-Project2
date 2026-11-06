@@ -44,6 +44,7 @@ public partial class controller
             if (guidedLeft <= 0) return;
             if (!locked) { noLockMsgUntil = Time.time + 1.2f; return; }
             guidedLeft--;
+            if (joinLog != null) joinLog._UsedGuided();   // 称号「古の撃墜王」はこの出撃ではもらえない
         }
         else
         {

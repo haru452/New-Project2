@@ -381,7 +381,7 @@ public static partial class FlightSetup
             string spath = PrefabUtility.GetPrefabAssetPathOfNearestInstanceRoot(ship);
             bool isCarrier = hinted || spath.EndsWith("/S10.prefab");   // S10 が空母
             target.kind = isCarrier ? 2 : 1;
-            if (isCarrier) target.maxHp = 80;
+            if (isCarrier) target.maxHp = 150;   // ミサイル（15）10 発で沈む
             ws.appearDelay = isCarrier ? CarrierAppearDelay : 0f;   // 空母はワールドが始まって 10 分後に出てくる
             UdonSharpEditorUtility.CopyProxyToUdon(target);
             bool fleet = false;

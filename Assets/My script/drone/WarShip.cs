@@ -88,6 +88,8 @@ public partial class WarShip : UdonSharpBehaviour
     public float pathMargin = 0f;         // コースの左右この距離にも島が無いこと（艦隊の幅）
     public bool useFormation;             // 艦隊の船: leader（空母）の向きから見て formationOffset の位置を走る
     public WarShip[] escorts;             // 空母: 艦隊の船（沈められた時、生き残りが見えている間は別の場所へ移らない）
+    [Tooltip("空母の艦隊で対空砲を持つ船（決まった 2 隻だけ。どのモードでも撃つ）。艦隊のほかの船は対空砲を持たない")]
+    public bool fleetAA;
     public Vector3 formationOffset;
     private double seenWorldStart;
 

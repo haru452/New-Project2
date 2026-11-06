@@ -23,7 +23,8 @@ public class CarrierVictory : UdonSharpBehaviour
     public TextMeshPro roomText;
     public string[] roomMsg;
     public Subtitles subtitles;
-    public JoinLog joinLog;              // 称号「生還者」（空母が沈んだ時に飛んでいた）
+    public JoinLog joinLog;              // 称号「生還者」（空母が沈んだ時に飛んでいた）・空母の 200 点の分配
+    public GameMode gameMode;            // ハード（2 倍）・裏切りの後（3 倍）
 
     private bool wasSunk;
     private float startTime;
@@ -50,8 +51,20 @@ public class CarrierVictory : UdonSharpBehaviour
         if (Time.time < nextCheck || carrier == null) return;
         nextCheck = Time.time + 0.5f;
         bool s = carrier._IsSunk();
+        if (s && !wasSunk) ShareCarrierPoints();
         if (s && !wasSunk && Time.time - startTime > joinGrace) goAt = Time.time + delay;
         wasSunk = s;
+    }
+
+    // 空母の 200 点: 自分が削った HP の割合でもらう（自分の画面で、自分の分だけ）
+    void ShareCarrierPoints()
+    {
+        int d = carrier._MyDamage();
+        carrier._ClearMyDamage();
+        if (d <= 0 || joinLog == null) return;
+        bool hard = gameMode != null && gameMode._IsHard();
+        int mul = (gameMode != null && gameMode._Betrayed()) ? 3 : 1;
+        joinLog._CarrierShare(d, carrier.maxHp, hard, mul);
     }
 
     void Go()
