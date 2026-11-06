@@ -170,6 +170,7 @@ public class JoinLog : UdonSharpBehaviour
     // 歴代の自己ベストを PlayerData に保存（ワールドを出ても残る）
     public WorldRanking worldRanking;   // 世界ランキング（全インスタンス共通・名前なし）
     public Achievements achievements;   // アチーブメント（称号）
+    public HistoryRoom historyRoom;     // 新しい歴史の間（折り鶴を納めた後に撃墜されると連れていかれる）
     public void _Achieve(int i) { if (achievements != null) achievements._Unlock(i); }
     // 称号の判定（撃墜・点数が増えるたび）。21 古の撃墜王: ロックオンミサイルを使わずに 1 回の出撃で 100 点
     private bool guidedUsed;   // この出撃でロックオンミサイルを撃った（撃墜されると元に戻る）
@@ -197,7 +198,7 @@ public class JoinLog : UdonSharpBehaviour
     // ---- 折り鶴の加護（その場だけ）: 折り鶴を納めると、次に飛行機に乗った時に 1 回だけ +10 点 ----
     private bool blessed;
     public bool _IsBlessed() { return blessed; }
-    public void _Bless() { blessed = true; if (achievements != null) achievements._AddCrane(); }   // 2 = 祈る者・17 = ユニコーン（合計 30 回）
+    public void _Bless() { blessed = true; if (achievements != null) achievements._AddCrane(); if (historyRoom != null) historyRoom._Offered(); }   // 2 = 祈る者・17 = ユニコーン（合計 30 回）
     public void _UseBlessing()
     {
         if (!blessed) return;
@@ -214,6 +215,7 @@ public class JoinLog : UdonSharpBehaviour
     {
         if (achievements != null) achievements._AddLoss();   // 称号「負けず嫌い」: 撃墜された回数
         lostThisVisit = true;
+        if (historyRoom != null) historyRoom._ShotDown();   // 折り鶴を納めた後なら、新しい歴史の間へ
         guidedUsed = false;   // 次の出撃は、またロックオンミサイルを使っていない状態から   // 称号「白虎」はもらえなくなる（ワールドに入り直すと元に戻る）
         soloScore = 0; soloA = 0; soloS = 0; soloC = 0; soloMode = 0;
         duoScore = 0; duoA = 0; duoS = 0; duoC = 0; duoMode = 0;
