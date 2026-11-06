@@ -131,4 +131,4 @@ git merge develop
 git push
 ```
 
-マージした後は、この `DEVELOP_README.md` は消してよい。
+マージした後は、この `README.md`（develop の確認用の説明）は消すか、書き換えてよい。

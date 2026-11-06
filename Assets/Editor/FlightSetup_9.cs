@@ -14,7 +14,7 @@ public static partial class FlightSetup
 {
     const int ShipsPerPlayer = 5;
     // ★★ デバッグ用に 60 秒（1 分）にしている（2026-11-06）。公開前に必ず 600f（10 分）に戻して、
-    //    「Tools/アチーブメントを設定する」をもう一度実行すること（DEVELOP_README.md・TODO1024.md にも書いてある）
+    //    「Tools/アチーブメントを設定する」をもう一度実行すること（develop の README.md・TODO1024.md にも書いてある）
     const float CarrierAppearDelay = 60f;   // 戦闘が始まってから空母の艦隊が出てくるまでの秒数（本番は 600f = 10 分）
     const float ShipAvoid = 2000f;   // 動く船は出撃地点の 2km 以内に入らない
 
