@@ -209,6 +209,7 @@ public partial class WarShip : UdonSharpBehaviour
     // ランダムな海の上に輪のコースを作る（出撃地点の近く・島の上は避ける）
     void GeneratePath(int seed)
     {
+        if (carrierApproach) { GenerateCarrierPath(seed); return; }   // 空母: 作戦範囲の外から入ってくる（WarShip_4.cs）
         builtSeed = seed;
         phaseShift = 0f; waiting = false;   // 新しいコースは最初から
         rng = seed % 2147483647;
@@ -281,6 +282,7 @@ public partial class WarShip : UdonSharpBehaviour
     // コース上の今の位置（m）。待っている間は進まない
     float PathS(float gap)
     {
+        if (carrierApproach) return CarrierS(gap);
         double t = waiting ? waitStart : Networking.GetServerTimeInSeconds();
         float s = (float)((t * pathSpeed + pathPhase + phaseShift - gap) % pathLen);
         if (s < 0f) s += pathLen;
@@ -331,7 +333,7 @@ public partial class WarShip : UdonSharpBehaviour
             {
                 // 待った時間の分だけ位置を戻して、そこから進む（全員の画面で同じ）
                 phaseShift -= (float)((now - waitStart) * pathSpeed);
-                phaseShift = phaseShift % pathLen;
+                if (!carrierApproach) phaseShift = phaseShift % pathLen;
                 waiting = false;
                 RequestSerialization();
             }

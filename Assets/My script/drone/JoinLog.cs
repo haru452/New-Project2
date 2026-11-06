@@ -124,8 +124,10 @@ public class JoinLog : UdonSharpBehaviour
     // 撃墜した（kind: 0 = 飛行機, 1 = 船, 2 = 空母）。partner が空なら 1 人、あれば 2 人の記録
     public void _RunKill(int kind, string partner, bool hard) { _RunKillMul(kind, partner, hard, 1); }
     // mul = 得点の倍率（遊覧モードの裏切りの後は 3 倍）
+    private bool lostThisVisit;   // ワールドに入ってから撃墜されたことがあるか
     public void _RunKillMul(int kind, string partner, bool hard, int mul)
     {
+        if (kind == 2 && hard && !lostThisVisit) _Achieve(16);   // 16 = 白虎（ハードで、一度も撃墜されずに空母を沈めた）
         string me = Clean(Networking.LocalPlayer.displayName);
         int pts = Points(kind) * (hard ? 2 : 1) * Mathf.Max(mul, 1);
         int m = hard ? 2 : 1;
@@ -136,6 +138,7 @@ public class JoinLog : UdonSharpBehaviour
             if (kind == 0 || kind == 4 || kind == 5) soloA++; else if (kind == 2) soloC++; else if (kind != 7) soloS++;
             if (soloBoard != null) soloBoard._Submit(me, soloScore, soloA, soloS, soloC, soloMode);
             SaveBest("solo", soloScore, soloA, soloS, soloC, soloMode, "");
+            if (achievements != null) achievements._CheckRun(soloScore, soloA, soloS, soloC);
         }
         else
         {
@@ -145,11 +148,14 @@ public class JoinLog : UdonSharpBehaviour
             string crew = me + " & " + Clean(partner);
             if (duoBoard != null) duoBoard._Submit(crew, duoScore, duoA, duoS, duoC, duoMode);
             SaveBest("duo", duoScore, duoA, duoS, duoC, duoMode, Clean(partner));
+            if (achievements != null) achievements._CheckRun(duoScore, duoA, duoS, duoC);
         }
     }
 
     // 歴代の自己ベストを PlayerData に保存（ワールドを出ても残る）
     public WorldRanking worldRanking;   // 世界ランキング（全インスタンス共通・名前なし）
+    public Achievements achievements;   // アチーブメント（称号）
+    public void _Achieve(int i) { if (achievements != null) achievements._Unlock(i); }
     void SaveBest(string kind, int score, int a, int s, int c, int mode, string partner)
     {
         VRCPlayerApi me = Networking.LocalPlayer;
@@ -167,7 +173,7 @@ public class JoinLog : UdonSharpBehaviour
     // ---- 折り鶴の加護（その場だけ）: 折り鶴を納めると、次に飛行機に乗った時に 1 回だけ +10 点 ----
     private bool blessed;
     public bool _IsBlessed() { return blessed; }
-    public void _Bless() { blessed = true; }
+    public void _Bless() { blessed = true; if (achievements != null) achievements._AddCrane(); }   // 2 = 祈る者・17 = ユニコーン（合計 30 回）
     public void _UseBlessing()
     {
         if (!blessed) return;
@@ -176,11 +182,14 @@ public class JoinLog : UdonSharpBehaviour
         soloScore += 10;
         if (soloBoard != null) soloBoard._Submit(me, soloScore, soloA, soloS, soloC, soloMode);
         SaveBest("solo", soloScore, soloA, soloS, soloC, soloMode, "");
+        if (achievements != null) achievements._CheckRun(soloScore, soloA, soloS, soloC);
     }
 
     // 撃墜された → 今回の出撃の記録は 0 から
     public void _ResetRun()
     {
+        if (achievements != null) achievements._AddLoss();   // 称号「負けず嫌い」: 撃墜された回数
+        lostThisVisit = true;   // 称号「白虎」はもらえなくなる（ワールドに入り直すと元に戻る）
         soloScore = 0; soloA = 0; soloS = 0; soloC = 0; soloMode = 0;
         duoScore = 0; duoA = 0; duoS = 0; duoC = 0; duoMode = 0;
     }

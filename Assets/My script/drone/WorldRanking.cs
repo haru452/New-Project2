@@ -22,8 +22,11 @@ public class WorldRanking : UdonSharpBehaviour
     public Subtitles subtitles;          // 選んだ言語（0 = English, 1 = 日本語, 2 = 中文）
     private int shownLang = -1;
     public VRCUrl[] submitUrls;          // 0〜3000 点
-    public VRCUrl[] submitUrlsNC;        // 0〜3000 点・国名なし（赤いスイッチ）
     public VRCUrl readUrl;               // Gist の scores.json
+    public VRCUrl[] badgeUrls;           // 称号の番号を送る（/b/0〜/b/31）
+    public Achievements achievements;    // 称号の名前（選んだ言語で）
+    private int badge = -1;              // 送りたい称号
+    private int badgeSent = -1;          // 送った称号（PlayerData に保存）
     public float readInterval = 120f;
 
     [Header("送るかどうかのスイッチ（プレイヤーごと・PlayerData に保存。最初はオフ）")]
@@ -32,12 +35,6 @@ public class WorldRanking : UdonSharpBehaviour
     public Material onMat, offMat;
     private bool optIn;
 
-    [Header("国名なしで参加する赤いスイッチ（プレイヤーごと・最初はオフ = 国名を出す）")]
-    public TextMeshPro countryLabel;
-    public Renderer countryRenderer;
-    public Material redOnMat, redOffMat;
-    private bool hideCountry;
-    private bool resend;                 // スイッチを切り替えた: 今の最高記録を送り直して国の表示を変える
 
     private int pending = -1;            // 送りたい点数
     private int sent = -1;               // 送った点数（このワールドにいる間）
@@ -49,6 +46,7 @@ public class WorldRanking : UdonSharpBehaviour
     private int[] topS = new int[5];
     private string[] topD = new string[5];
     private string[] topC = new string[5];   // 国コード（JP など）
+    private int[] topB = new int[5];         // 称号の番号（-1 = なし）
     private int topN = -1;               // -1 = まだ読めていない
     private bool readFailed;
 
@@ -60,16 +58,6 @@ public class WorldRanking : UdonSharpBehaviour
         optIn = !optIn;
         PlayerData.SetBool("worldOptIn", optIn);
         nextSend = Time.time + 1f;
-        ShowSwitch();
-    }
-
-    // 赤いスイッチを押した: 国名を出す / 出さない を切り替える（自分だけ）
-    public void _ToggleCountry()
-    {
-        hideCountry = !hideCountry;
-        PlayerData.SetBool("worldHideCountry", hideCountry);
-        if (sent >= 0) resend = true;
-        nextSend = Mathf.Max(nextSend, Time.time + 1f);
         ShowSwitch();
     }
 
@@ -85,19 +73,6 @@ public class WorldRanking : UdonSharpBehaviour
     {
         int l = Lang();
         shownLang = l;
-        if (countryLabel != null)
-        {
-            string[] cOn = {
-                "<b>HIDE MY COUNTRY: <color=#ff7a7a>ON</color></b>\n<size=65%>Join the ranking without your country</size>",
-                "<b>国名を隠す: <color=#ff7a7a>オン</color></b>\n<size=65%>国名なしでランキングに参加します</size>",
-                "<b>隐藏我的国家: <color=#ff7a7a>开</color></b>\n<size=65%>不显示国家参加排行榜</size>" };
-            string[] cOff = {
-                "<b>HIDE MY COUNTRY: <color=#c8d4e0>OFF</color></b>\n<size=65%>Your country is shown on the ranking</size>",
-                "<b>国名を隠す: <color=#c8d4e0>オフ</color></b>\n<size=65%>ランキングに国名が表示されます</size>",
-                "<b>隐藏我的国家: <color=#c8d4e0>关</color></b>\n<size=65%>排行榜上会显示你的国家</size>" };
-            countryLabel.text = hideCountry ? cOn[l] : cOff[l];
-        }
-        if (countryRenderer != null && redOnMat != null && redOffMat != null) countryRenderer.sharedMaterial = hideCountry ? redOnMat : redOffMat;
         if (switchLabel != null)
         {
             string[] sOn = {
@@ -121,6 +96,13 @@ public class WorldRanking : UdonSharpBehaviour
         return title;
     }
 
+    // Achievements から: 世界ランキングに出す称号を選んだ
+    public void _SetBadge(int b)
+    {
+        badge = b;
+        nextSend = Mathf.Max(nextSend, Time.time + 1f);
+    }
+
     // JoinLog から: 自分の最高記録が上がった
     public void _Offer(int score)
     {
@@ -133,8 +115,8 @@ public class WorldRanking : UdonSharpBehaviour
         {
             // 前に送った点数は、もう送らない
             if (PlayerData.HasKey(player, "worldSentBest")) sent = PlayerData.GetInt(player, "worldSentBest");
+            if (PlayerData.HasKey(player, "worldSentBadge")) badgeSent = PlayerData.GetInt(player, "worldSentBadge");
             optIn = PlayerData.HasKey(player, "worldOptIn") && PlayerData.GetBool(player, "worldOptIn");
-            hideCountry = PlayerData.HasKey(player, "worldHideCountry") && PlayerData.GetBool(player, "worldHideCountry");
             ShowSwitch();
             if (PlayerData.HasKey(player, "soloBestScore")) _Offer(PlayerData.GetInt(player, "soloBestScore"));
         }
@@ -147,8 +129,8 @@ public class WorldRanking : UdonSharpBehaviour
     {
         if (busy && Time.time > busyUntil) busy = false;   // 返事が来なくても先へ
         if (subtitles != null && subtitles._Lang() != shownLang) { ShowSwitch(); Draw(); }   // 言語を選び直した
-        VRCUrl[] urls = hideCountry ? submitUrlsNC : submitUrls;
-        if (optIn && !busy && (pending > sent || resend) && Mathf.Max(pending, sent) >= 0 && Time.time >= nextSend && urls != null && urls.Length > 0)
+        VRCUrl[] urls = submitUrls;
+        if (optIn && !busy && pending > sent && Mathf.Max(pending, sent) >= 0 && Time.time >= nextSend && urls != null && urls.Length > 0)
         {
             int best = Mathf.Max(pending, sent);
             int s = Mathf.Clamp(best, 0, urls.Length - 1);
@@ -157,9 +139,18 @@ public class WorldRanking : UdonSharpBehaviour
                 busy = true; busyUntil = Time.time + 15f;
                 VRCStringDownloader.LoadUrl(urls[s], (IUdonEventReceiver)this);
             }
-            resend = false;
             sent = best;
             PlayerData.SetInt("worldSentBest", sent);
+            nextSend = Time.time + 15f;
+            return;
+        }
+        // 称号を選び直した: 番号だけ送る（サーバーが、この人の記録に付ける）
+        if (optIn && !busy && badge >= 0 && badge != badgeSent && Time.time >= nextSend && badgeUrls != null && badge < badgeUrls.Length && badgeUrls[badge] != null)
+        {
+            busy = true; busyUntil = Time.time + 15f;
+            VRCStringDownloader.LoadUrl(badgeUrls[badge], (IUdonEventReceiver)this);
+            badgeSent = badge;
+            PlayerData.SetInt("worldSentBadge", badgeSent);
             nextSend = Time.time + 15f;
             return;
         }
@@ -194,6 +185,8 @@ public class WorldRanking : UdonSharpBehaviour
             topD[topN] = e.DataDictionary.TryGetValue("d", out dv) && dv.TokenType == TokenType.String ? dv.String : "";
             DataToken cv;
             topC[topN] = e.DataDictionary.TryGetValue("c", out cv) && cv.TokenType == TokenType.String ? cv.String : "";
+            DataToken bv;
+            topB[topN] = e.DataDictionary.TryGetValue("b", out bv) && bv.TokenType == TokenType.Double ? (int)bv.Number : -1;
             topN++;
         }
         readFailed = false;
@@ -225,16 +218,27 @@ public class WorldRanking : UdonSharpBehaviour
         return "";
     }
 
-    // 国コード → 国名（よく来る国だけ。ほかはコードのまま。無い時は Unknown）
-    string Country(string c)
+    // 国コード → 国名（選んだ言語で。よく来る国だけ。ほかはコードのまま。無い時は「不明」）
+    private string[] cCode = { "JP", "US", "KR", "TW", "CN", "HK", "GB", "DE", "FR", "CA", "AU", "BR", "RU", "TH", "PH", "ID", "SG", "NL", "ES", "IT", "MX", "PL", "SE", "NZ" };
+    private string[] cEn = { "Japan", "USA", "Korea", "Taiwan", "China", "Hong Kong", "UK", "Germany", "France", "Canada", "Australia", "Brazil", "Russia", "Thailand", "Philippines", "Indonesia", "Singapore", "Netherlands", "Spain", "Italy", "Mexico", "Poland", "Sweden", "New Zealand" };
+    private string[] cJa = { "日本", "アメリカ", "韓国", "台湾", "中国", "香港", "イギリス", "ドイツ", "フランス", "カナダ", "オーストラリア", "ブラジル", "ロシア", "タイ", "フィリピン", "インドネシア", "シンガポール", "オランダ", "スペイン", "イタリア", "メキシコ", "ポーランド", "スウェーデン", "ニュージーランド" };
+    private string[] cZh = { "日本", "美国", "韩国", "台湾", "中国", "香港", "英国", "德国", "法国", "加拿大", "澳大利亚", "巴西", "俄罗斯", "泰国", "菲律宾", "印度尼西亚", "新加坡", "荷兰", "西班牙", "意大利", "墨西哥", "波兰", "瑞典", "新西兰" };
+
+    string Country(string c, int l)
     {
-        if (c == null || c == "" || c == "XX" || c == "T1") return "Unknown";   // 国名なし（赤いスイッチ）・国がわからない
-        if (c == "JP") return "Japan"; if (c == "US") return "USA"; if (c == "KR") return "Korea"; if (c == "TW") return "Taiwan";
-        if (c == "CN") return "China"; if (c == "HK") return "Hong Kong"; if (c == "GB") return "UK"; if (c == "DE") return "Germany";
-        if (c == "FR") return "France"; if (c == "CA") return "Canada"; if (c == "AU") return "Australia"; if (c == "BR") return "Brazil";
-        if (c == "RU") return "Russia"; if (c == "TH") return "Thailand"; if (c == "PH") return "Philippines"; if (c == "ID") return "Indonesia";
-        if (c == "SG") return "Singapore"; if (c == "NL") return "Netherlands"; if (c == "ES") return "Spain"; if (c == "IT") return "Italy";
-        if (c == "MX") return "Mexico"; if (c == "PL") return "Poland"; if (c == "SE") return "Sweden"; if (c == "NZ") return "New Zealand";
+        if (c == null || c == "" || c == "XX" || c == "T1")   // 国がわからない（前にあった「国名を隠す」で送った記録も）
+        {
+            if (l == 1) return "不明";
+            if (l == 2) return "未知";
+            return "Unknown";
+        }
+        for (int i = 0; i < cCode.Length; i++)
+        {
+            if (cCode[i] != c) continue;
+            if (l == 1) return cJa[i];
+            if (l == 2) return cZh[i];
+            return cEn[i];
+        }
         return c;
     }
 
@@ -258,8 +262,9 @@ public class WorldRanking : UdonSharpBehaviour
         {
             string nm = NameFor(topS[i], ps, ps.Length, used);
             string col = i == 0 ? "#ffd84a" : (i == 1 ? "#d8e2ee" : (i == 2 ? "#e0a070" : "#ffffff"));
-            string cn = Country(topC[i]);
-            t += "\n<color=" + col + ">" + (i + 1) + ".</color>  <b>" + topS[i] + "</b>" + pts[l] + "   " +(nm != "" ? "<color=#7fe0ff>" + nm + "</color>" : "<color=#6f8090>—</color>") + (cn != "" ? "  <color=#c8d4e0>" + cn + "</color>" : "") + "  <size=60%><color=#6f8090>" + topD[i] + "</color></size>";
+            string cn = Country(topC[i], l);
+            string bn = achievements != null ? achievements._Name(topB[i], l) : "";
+            t += "\n<color=" + col + ">" + (i + 1) + ".</color>  <b>" + topS[i] + "</b>" + pts[l] + "   " + (bn != "" ? "<color=#ffcf7a>《" + bn + "》</color> " : "") + (nm != "" ? "<color=#7fe0ff>" + nm + "</color>" : "<color=#6f8090>—</color>") + (cn != "" ? "  <color=#c8d4e0>" + cn + "</color>" : "") + "  <size=60%><color=#6f8090>" + topD[i] + "</color></size>";
         }
         if (topN == 0) t += "\n<color=#9fb4c8>" + none[l] + "</color>";
         text.text = t;

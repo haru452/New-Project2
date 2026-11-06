@@ -155,7 +155,7 @@ public partial class WarShip
             // 空母: 生き残った艦隊の船か、沈んだ場所が誰かに見えている間は移らない（復活もしない）
             if (noRelocate && relocPending && dead && CarrierGroupSeen()) folAlive = true;
             if (noRelocate && target != null) target.holdRespawn = relocPending && dead;
-            if (relocPending && dead && !folAlive)
+            if (relocPending && dead && !folAlive && !carrierApproach)   // 空母は復活しないので、別の場所へも移らない
             {
                 relocPending = false;
                 // 次に出る場所: 近くの船が上限に達していないプレイヤーの近く（無理なら、ランダムな海）。空母はランダムな海
@@ -163,6 +163,7 @@ public partial class WarShip
                 {
                     pathSeed = Random.Range(1, 2000000000);
                     anchor = Vector3.zero;
+                    spawnTime = Networking.GetServerTimeInSeconds();   // 空母: 今から外の海を出て、範囲内へ向かう
                     RequestSerialization();
                     GeneratePath(pathSeed);
                 }
@@ -179,8 +180,14 @@ public partial class WarShip
                 {
                     pathSeed = Random.Range(1, 2000000000);
                     anchor = Vector3.zero;
+                    spawnTime = 0.0;   // 空母: 戦闘が始まって 10 分後に、外の海から出てくる
                     RequestSerialization();
                     GeneratePath(pathSeed);
+                    // 沈められていたら、新しいモードでは元に戻す（空母は戦闘中には復活しない）
+                    if (carrierApproach && target != null) target.SendCustomNetworkEvent(VRC.Udon.Common.Interfaces.NetworkEventTarget.Owner, nameof(FlightTarget.NetRevive));
+                    if (carrierApproach && escorts != null)   // 護衛の船も
+                        for (int k = 0; k < escorts.Length; k++)
+                            if (escorts[k] != null && escorts[k].target != null) escorts[k].target.SendCustomNetworkEvent(VRC.Udon.Common.Interfaces.NetworkEventTarget.Owner, nameof(FlightTarget.NetRevive));
                 }
             }
         }

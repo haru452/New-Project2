@@ -7,7 +7,8 @@ using VRC.Udon.Common.Interfaces;
 using TMPro;
 
 // =============================================================
-//  2 人目の席（ガンナー）
+//  旋回砲塔（ガンナー）
+//  ※ 2 人目の席（2 人乗り）は廃止（2026-11-06）。今は操縦士が P キーで砲塔を操作する時だけ使う
 //  ・機体の下の旋回砲塔を、見ている方向へ向けて撃つ（デスクトップはマウス、VR は頭の向き）
 //  ・1 / 2 / 3 で武器を選ぶ（機銃・無誘導ミサイル・ロックオンミサイル）。Enter か左クリックで撃つ
 //    VR: 右トリガーで撃つ、左トリガーで武器の切り替え
@@ -109,30 +110,17 @@ public class GunnerStation : UdonSharpBehaviour
     }
 
     // ---------------- 乗り降り ----------------
+    // 2 人乗り（後ろの席）は廃止（2026-11-06）。席には当たり判定がないので座れないが、
+    // 万一座ってしまっても、すぐに降ろす。操縦士の P キー（_SetSolo）はこの席を使わないので、そのまま使える
     public override void OnStationEntered(VRCPlayerApi player)
     {
-        gunnerPlayer = player;
-        if (plane != null && plane.boarder != null) plane.boarder._Refresh();
-        if (player == null || !player.isLocal) return;
-        solo = false;
-        Networking.SetOwner(player, gameObject);
-        if (plane != null && plane.voiceRelay != null) plane.voiceRelay._MarkSeen();   // 座る前の音声は流さない
-        if (radarRoot != null) radarRoot.SetActive(true);
-        if (plane != null) plane._UseGunnerRadar(true);
-        isGunner = true;
-        if (plane != null && plane.joinLog != null) plane.joinLog._UseBlessing();   // 折り鶴の加護: 乗った時に 1 回だけ +10 点
-        isVR = player.IsUserInVR();
-        Refill();
-        weapon = 0;
-        if (hudRoot != null) hudRoot.SetActive(true);
-        if (plane != null) { plane._SetExteriorVisible(false); plane._SetBoardClickable(false); }
+        if (player != null && player.isLocal && station != null) station.ExitStation(player);
     }
 
     public override void OnStationExited(VRCPlayerApi player)
     {
         if (gunnerPlayer == player) gunnerPlayer = null;
-        if (plane != null && plane.boarder != null) plane.boarder._Refresh();
-        if (player == null || !player.isLocal) return;
+        if (player == null || !player.isLocal || !isGunner || solo) return;   // 2 人目として座っていなかった（いつもこちら）
         isGunner = false;
         useHeld = false;
         trigPrev = false;

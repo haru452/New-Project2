@@ -408,6 +408,7 @@ public static partial class FlightSetup
         }
         foreach (var vr in Object.FindObjectsOfType<VoiceRelay>(true)) { add(voice, vr.voiceOut); add(radio, vr.radioOut); }
         foreach (var gm in Object.FindObjectsOfType<GameMode>(true)) add(radio, gm.radio);
+        foreach (var ab in Object.FindObjectsOfType<AreaBoundary>(true)) add(radio, ab.radio);   // 作戦範囲外の警告
         foreach (var gs in Object.FindObjectsOfType<GunnerStation>(true)) { add(alarm, gs.stallWarnAudio); add(alarm, gs.stallAudio); add(alarm, gs.alarmAudio); add(weapon, gs.gunAudio); }
         // 機体・船・敵機・標的・共有の爆発に付いている残りの音は「武器・爆発」
         var weaponRoots = new System.Collections.Generic.List<Transform>();

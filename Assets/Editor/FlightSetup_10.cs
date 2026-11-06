@@ -31,16 +31,12 @@ public static partial class FlightSetup
             var urls = new VRC.SDKBase.VRCUrl[3001];
             for (int i = 0; i <= 3000; i++) urls[i] = new VRC.SDKBase.VRCUrl(baseUrl + "/s/" + i);
             wr.submitUrls = urls;
-            var urlsNC = new VRC.SDKBase.VRCUrl[3001];
-            for (int i = 0; i <= 3000; i++) urlsNC[i] = new VRC.SDKBase.VRCUrl(baseUrl + "/n/" + i);
-            wr.submitUrlsNC = urlsNC;
             wr.readUrl = new VRC.SDKBase.VRCUrl(gist);
             log.AppendLine("世界ランキング: 点数の URL 3001 個（0〜3000 点）と、表示用の Gist を設定");
         }
         else
         {
             wr.submitUrls = new VRC.SDKBase.VRCUrl[0];
-            wr.submitUrlsNC = new VRC.SDKBase.VRCUrl[0];
             wr.readUrl = null;
             log.AppendLine("世界ランキング: サーバーの URL がまだ無いので「準備中」と表示（Backup_flight/score_urls.txt に 2 行書くと設定されます）");
         }
@@ -90,37 +86,12 @@ public static partial class FlightSetup
             ro.ranking = wr;
             UdonSharpEditorUtility.CopyProxyToUdon(ro);
         }
-        // 国名なしで参加する赤いスイッチ（送るスイッチの右）
-        Material redOn = UnlitMat("RankCountryOn", new Color(0.95f, 0.18f, 0.16f, 1f), false, 2000);
-        Material redOff = UnlitMat("RankCountryOff", new Color(0.45f, 0.14f, 0.13f, 1f), false, 2000);
-        var btn2 = GameObject.CreatePrimitive(PrimitiveType.Cube);
-        btn2.name = "CountryButton";
-        btn2.transform.SetParent(sw.transform, false);
-        btn2.transform.localPosition = new Vector3(4.05f, 1.15f, 0f);
-        btn2.transform.localScale = new Vector3(0.55f, 0.3f, 0.15f);
-        btn2.GetComponent<MeshRenderer>().sharedMaterial = redOff;
-        var lab2 = new GameObject("CountryLabel");
-        lab2.transform.SetParent(sw.transform, false);
-        lab2.transform.localPosition = new Vector3(4.05f, 1.48f, -0.02f);
-        var lt2 = lab2.AddComponent<TextMeshPro>();
-        lt2.fontSize = 0.9f; lt2.alignment = TextAlignmentOptions.Center; lt2.enableWordWrapping = false; lt2.richText = true;
-        lt2.rectTransform.sizeDelta = new Vector2(1.2f, 0.3f);
-        lt2.text = "HIDE MY COUNTRY: OFF";
-        if (AssetDatabase.LoadAssetAtPath<UdonSharpProgramAsset>("Assets/My script/drone/RankOptIn.asset") != null)
-        {
-            var ro2 = UdonSharpEditor.UdonSharpUndo.AddComponent<RankOptIn>(btn2);
-            ro2.ranking = wr;
-            ro2.countrySwitch = true;
-            UdonSharpEditorUtility.CopyProxyToUdon(ro2);
-        }
-        wr.countryLabel = lt2;
-        wr.countryRenderer = btn2.GetComponent<MeshRenderer>();
-        wr.redOnMat = redOn; wr.redOffMat = redOff;
         wr.switchLabel = lt;
         wr.switchRenderer = btn.GetComponent<MeshRenderer>();
         wr.onMat = onM; wr.offMat = offM;
         log.AppendLine("世界ランキング: 送るかどうかのスイッチ（最初はオフ・プレイヤーごと）と注意事項の板を、掲示板の右に置きました");
         UdonSharpEditorUtility.CopyProxyToUdon(wr);
+        SetupAchievements(wr, log);   // アチーブメント（称号）の板（AchievementSetup.cs）
         return wr;
     }
 
@@ -537,5 +508,5 @@ public static partial class FlightSetup
         log.AppendLine("海: 海面 " + seaY.ToString("F1") + "m 元の板 " + hidden + " 枚を非表示 / 波のある海を設置");
     }
 
-    // 中心ほど細かく、外ほど粗い 1 枚の網目（半径 8km・約 6.3 万頂点）
+    // 中心ほど細かく、外ほど粗い 1 枚の網目（半径 14km・約 6.3 万頂点。GetOceanMesh は FlightSetup_11.cs）
 }

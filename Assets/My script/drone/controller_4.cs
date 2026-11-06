@@ -400,6 +400,7 @@ public partial class controller
     // 自分（またはガンナー）が撃った: 見つかっている間なら問答無用で攻撃開始
     void OnPlayerFired()
     {
+        kirinTime = 0f;   // 称号「麒麟」: 武器を使ったら最初から
         if (!isPiloting || hostile || !Armed()) return;   // 射出前（潜水艦の上・乗る時のクリック）は数えない
         if (gameMode != null && gameMode._SightMode()) return;   // 遊覧モード: 撃つだけでは何も起きない（敵に当てて HP が減ったら裏切り）
         if (Quiet()) return;   // 「偵察任務」の無線の間は、撃っても攻撃してこない

@@ -246,6 +246,8 @@ public partial class controller
             UpdateVoice();
             UpdateHostility();
             UpdateAstral();
+            UpdateTraitor();
+            UpdateHiddenAchievements();
             UpdateSight();
             UpdateSpotted();
             UpdateCarrierWarning();

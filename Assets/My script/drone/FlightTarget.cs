@@ -55,6 +55,7 @@ public class FlightTarget : UdonSharpBehaviour
     }
 
     public bool _IsDestroyed() { return destroyed || hiddenLocal; }
+    public bool _IsSunk() { return destroyed; }   // 本当に壊された（まだ出てきていないだけの時は false）
     // まだ出てきていない（空母は 10 分後に出る）: 見えない・当たらない・レーダーにも出ない（全員の画面で同じ時刻に切り替わる）
     private bool hiddenLocal;
     public void _SetHidden(bool h)
@@ -131,6 +132,16 @@ public class FlightTarget : UdonSharpBehaviour
             SendCustomEventDelayedSeconds(nameof(_Respawn), 5f);
             return;
         }
+        hp = maxHp;
+        destroyed = false;
+        RequestSerialization();
+        Apply();
+    }
+
+    // 復活しない物（空母）を、モードを切り替えた時に元に戻す（オーナーに送る）
+    public void NetRevive()
+    {
+        if (!Networking.IsOwner(gameObject) || !destroyed) return;
         hp = maxHp;
         destroyed = false;
         RequestSerialization();

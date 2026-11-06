@@ -212,6 +212,7 @@ public partial class controller
         if (sight)
         {
             if (!astralIntroDone && d < astralCallRadius) { astralIntroDone = true; PlayRadio(astralWelcome); }
+            if (isPiloting && joinLog != null && AtAstralPad()) joinLog._Achieve(8);   // 8 = 観光客（遊覧モードでアストラル空港に着陸）
             return;
         }
         if (!astralIntroDone && d < astralCallRadius) { astralIntroDone = true; PlayRadio(astralIntro); return; }
@@ -224,6 +225,29 @@ public partial class controller
                 if (gameMode != null) gameMode._AstralCeasefire();
             }
             else PlayRadio(astralClear);
+        }
+    }
+    // 普通・ハードモードでペラゴス基地に着陸した: 称号「裏切者」（9 番）
+    void UpdateTraitor()
+    {
+        if (!isPiloting || !hasTakenOff || !grounded || airspeed >= 25f || baseCenter == null || car == null || joinLog == null) return;
+        if (gameMode == null || gameMode._SightMode()) return;
+        if (FlatDist(car.transform.position, baseCenter.position) < 1500f) joinLog._Achieve(9);
+    }
+    // 隠し称号
+    //   12 不死鳥: HP 10 以下で、アストラル空港に着陸 / イ402 の修理が効く範囲を飛ぶ
+    //   13 麒麟: 普通・ハードモードで、武器を一度も使わずに 15 分飛ぶ（撃墜・降りる・撃つと最初から）
+    private float kirinTime;
+    void UpdateHiddenAchievements()
+    {
+        if (!isPiloting || joinLog == null || car == null || crashed) return;
+        if (!hasTakenOff) { kirinTime = 0f; return; }
+        if (hp <= 10f && (AtAstralPad() || (respawnPoint != null && Vector3.Distance(car.transform.position, respawnPoint.position) < repairRadius)))
+            joinLog._Achieve(12);
+        if (gameMode != null && !gameMode._SightMode() && !grounded)
+        {
+            kirinTime += Time.deltaTime;
+            if (kirinTime >= 900f) joinLog._Achieve(13);   // 15 分
         }
     }
     bool AtAstralPad()

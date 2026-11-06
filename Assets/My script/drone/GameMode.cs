@@ -21,6 +21,8 @@ public class GameMode : UdonSharpBehaviour
     public const int MODE_HARD = 1;
     public const int MODE_SIGHTSEEING = 2;
     private const int MODE_COUNT = 3;
+    [Tooltip("ハードモードを選べるか（2027 年中に公開予定。それまではオフ = 普通 ⇔ 遊覧 だけ）")]
+    public bool hardEnabled = false;
 
     public TextMeshPro label;
     public Subtitles subtitles;          // 選んだ言語（0 = English, 1 = 日本語, 2 = 中文）。モードの文字をその言語で出す
@@ -235,6 +237,7 @@ public class GameMode : UdonSharpBehaviour
         }
         Networking.SetOwner(Networking.LocalPlayer, gameObject);
         mode = (mode + 1) % MODE_COUNT;   // 普通 → ハード → 遊覧 → 普通 …
+        if (mode == MODE_HARD && !hardEnabled) mode = MODE_SIGHTSEEING;   // ハードはまだ選べない（普通 ⇔ 遊覧）
         warStarted = false;               // モードを切り替えたら、戦闘の状態は最初から（また警告から）
         betrayed = false;                 // 遊覧モードの裏切りも元に戻す
         escortPlane = -1;
@@ -292,6 +295,15 @@ public class GameMode : UdonSharpBehaviour
                 "<color=#7fff9f><size=140%>普通模式</size></color>\n<size=70%>没有防空炮。\n按下切换为困难模式（得分×2）</size>" };
             string[] it = { "Switch to HARD mode (score x2)", "ハードモードにする（得点2倍）", "切换为困难模式（得分×2）" };
             text = t[l]; interact = it[l];
+            if (!hardEnabled)   // ハードはまだ選べない: 次は遊覧モード
+            {
+                string[] t2 = {
+                    "<color=#7fff9f><size=140%>NORMAL MODE</size></color>\n<size=70%>No anti-aircraft guns.\nPress to switch to SIGHTSEEING\n<color=#ff8080>HARD MODE: coming in 2027</color></size>",
+                    "<color=#7fff9f><size=140%>普通モード</size></color>\n<size=70%>対空砲はありません。\n押すと遊覧モードに切り替え\n<color=#ff8080>ハードモードは 2027 年公開予定</color></size>",
+                    "<color=#7fff9f><size=140%>普通模式</size></color>\n<size=70%>没有防空炮。\n按下切换为游览模式\n<color=#ff8080>困难模式将于 2027 年推出</color></size>" };
+                string[] it2 = { "Switch to SIGHTSEEING mode", "遊覧モードにする", "切换为游览模式" };
+                text = t2[l]; interact = it2[l];
+            }
             mat = normalMat;
         }
 

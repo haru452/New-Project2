@@ -183,7 +183,7 @@ public static class LangImages
         }
         else log.AppendLine("GameMode が見つからない");
 
-        // 6) 世界ランキングの見出し・「SEND MY BEST」「HIDE MY COUNTRY」のスイッチの文字を、選んだ言語で出す
+        // 6) 世界ランキングの見出し・「SEND MY BEST」のスイッチの文字を、選んだ言語で出す
         var wr = Object.FindObjectOfType<WorldRanking>(true);
         if (wr != null)
         {
@@ -192,7 +192,7 @@ public static class LangImages
             if (font != null)
             {
                 font.TryAddCharacters(RankChars);
-                foreach (var lb in new[] { wr.text, wr.switchLabel, wr.countryLabel })
+                foreach (var lb in new[] { wr.text, wr.switchLabel })
                 {
                     if (lb == null) continue;
                     lb.font = font;
@@ -200,7 +200,7 @@ public static class LangImages
                 }
                 foreach (var at in font.atlasTextures) if (at != null) EditorUtility.SetDirty(at);
                 EditorUtility.SetDirty(font); EditorUtility.SetDirty(font.material);
-                log.AppendLine("世界ランキング・SEND MY BEST・HIDE MY COUNTRY: English / 日本語 / 中文");
+                log.AppendLine("世界ランキング・SEND MY BEST: English / 日本語 / 中文");
             }
             else log.AppendLine("字幕のフォントが見つからない（世界ランキング）");
             UdonSharpEditorUtility.CopyProxyToUdon(wr);

@@ -314,6 +314,7 @@ public partial class controller
         remoteFiring = false;
         fireInput = false;
         if (joinLog != null) joinLog._UseBlessing();   // 折り鶴の加護: 乗った時に 1 回だけ +10 点
+        if (joinLog != null && joinLog.achievements != null) joinLog.achievements._AddBoard();   // 称号「パイロット」: 乗った回数
         if (gunSight != null) gunSight.SetActive(true);
         if (cockpitRoot != null) cockpitRoot.SetActive(true);
         SetExteriorVisible(false);
@@ -413,6 +414,14 @@ public partial class controller
     {
         remoteFiring = false;
         if (pilotPlayer == player) pilotPlayer = null;
+    }
+
+    // 空母を倒した時: 自分が操縦していたら座席から降りて、機体を格納庫に戻す（CarrierVictory が呼ぶ）
+    public void _ExitForVictory()
+    {
+        if (!isPiloting || station == null) return;
+        station.ExitStation(Networking.LocalPlayer);
+        SendCustomEventDelayedSeconds(nameof(_AfterCrash), 0.5f);   // 墜落した後と同じ: 修理・補給して格納庫へ
     }
 
     // 座席は Disable Station Exit をオンにしている（オフだとWASDで降りてしまう）ので、ジャンプで自分で降りる
