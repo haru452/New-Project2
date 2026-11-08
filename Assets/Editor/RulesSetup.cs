@@ -26,7 +26,7 @@ public static class RulesSetup
         "<color=#9fd3ff><b>Goal</b></color>\n" +
         "Take off from the I-402 hangar and attack the Gauria Empire's fighters, warships and Pelagos base to earn points.\n\n" +
         "<color=#9fd3ff><b>Points</b></color>\n" +
-        "Fighter 5 / Carrier fighter 7 / Warship 3 / Cargo ship 1 (refills ammo)\nBase building 2 (destroy them all: +100)\n" +
+        "Fighter 10 / Carrier fighter 14 / Warship 6 / Cargo ship 2 (refills ammo)\nBase building 4 (destroy them all: +100)\n" +
         "Aircraft carrier 200 (shared by the damage each player dealt)\n\n" +
         "<color=#9fd3ff><b>Aircraft carrier fleet</b></color>\n" +
         "After a while, an enemy carrier fleet with anti-air escorts arrives. Sink the carrier to win.\n\n" +
@@ -42,7 +42,7 @@ public static class RulesSetup
         "<color=#9fd3ff><b>目的</b></color>\n" +
         "I-402 の格納庫から出撃し、ガウリア帝国の戦闘機・軍艦・ペラゴス基地を攻撃して点数をかせごう。\n\n" +
         "<color=#9fd3ff><b>点数</b></color>\n" +
-        "戦闘機 5 点 / 空母の戦闘機 7 点 / 軍艦 3 点 / 貨物船 1 点（弾が満タンに）\n基地の建物 2 点（全部壊すと +100 点）\n" +
+        "戦闘機 10 点 / 空母の戦闘機 14 点 / 軍艦 6 点 / 貨物船 2 点（弾が満タンに）\n基地の建物 4 点（全部壊すと +100 点）\n" +
         "空母 200 点（削った割合でみんなで分ける）\n\n" +
         "<color=#9fd3ff><b>空母の艦隊</b></color>\n" +
         "しばらくすると、対空砲を持つ護衛を連れた敵の空母の艦隊がやってくる。空母を沈めれば勝利。\n\n" +
@@ -58,7 +58,7 @@ public static class RulesSetup
         "<color=#9fd3ff><b>目标</b></color>\n" +
         "从 I-402 的机库出击，攻击高利亚帝国的战斗机、军舰和佩拉戈斯基地来赚取分数。\n\n" +
         "<color=#9fd3ff><b>分数</b></color>\n" +
-        "战斗机 5 分 / 航母战斗机 7 分 / 军舰 3 分 / 货船 1 分（弹药补满）\n基地建筑 2 分（全部摧毁 +100 分）\n" +
+        "战斗机 10 分 / 航母战斗机 14 分 / 军舰 6 分 / 货船 2 分（弹药补满）\n基地建筑 4 分（全部摧毁 +100 分）\n" +
         "航母 200 分（按各自造成的伤害比例分配）\n\n" +
         "<color=#9fd3ff><b>航母舰队</b></color>\n" +
         "过一段时间，带着防空护卫舰的敌方航母舰队会到来。击沉航母即可获胜。\n\n" +

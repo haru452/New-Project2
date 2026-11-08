@@ -119,7 +119,10 @@ public class JoinLog : UdonSharpBehaviour
         return n.Replace("<", "＜").Replace(">", "＞");
     }
 
-    int Points(int kind) { return kind == 0 ? 5 : (kind == 1 ? 3 : (kind == 3 ? 1 : (kind == 4 ? 4 : (kind == 5 ? 7 : (kind == 6 ? 2 : (kind == 7 ? 100 : 0)))))); }   // 0 = 敵の戦闘機（5 点）。2 = 空母はここでは 0 点（200 点を削った割合で分ける: _CarrierShare）   // 6 = ペラゴス基地の建物 1 つ（2 点）   // 7 = 基地の建物を全部壊した（100 点）   // 5 = 空母の戦闘機（7 点・飛行機）   // 3 = 貨物船（1 点・船）、4 = 飛ぶ警戒機（4 点・飛行機）
+    // 2026-11-08 に 1 つずつの点数を 2 倍にした（空母の 200 点と、基地を全部壊した 100 点はそのまま）
+    //   0 = 敵の戦闘機 10 点 / 1 = 軍艦 6 点 / 3 = 貨物船 2 点 / 4 = 飛ぶ警戒機 8 点 / 5 = 空母の戦闘機 14 点 / 6 = ペラゴス基地の建物 1 つ 4 点
+    //   7 = 基地の建物を全部壊した 100 点 / 2 = 空母はここでは 0 点（200 点を削った割合で分ける: _CarrierShare）
+    int Points(int kind) { return kind == 0 ? 10 : (kind == 1 ? 6 : (kind == 3 ? 2 : (kind == 4 ? 8 : (kind == 5 ? 14 : (kind == 6 ? 4 : (kind == 7 ? 100 : 0)))))); }
 
     // 撃墜した（kind: 0 = 飛行機, 1 = 船, 2 = 空母）。partner が空なら 1 人、あれば 2 人の記録
     public void _RunKill(int kind, string partner, bool hard) { _RunKillMul(kind, partner, hard, 1); }

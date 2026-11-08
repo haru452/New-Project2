@@ -128,19 +128,19 @@
     }
   },
   "achvBoard": {
-    "LastUpdated": "2026-11-08T17:36:48.8778333+09:00",
+    "LastUpdated": "2026-11-08T18:25:35.220051+09:00",
     "Key": "achvBoard",
     "Value": {
       "type": "Int",
-      "value": 70
+      "value": 72
     }
   },
   "achvLoss": {
-    "LastUpdated": "2026-11-08T17:18:54.7143624+09:00",
+    "LastUpdated": "2026-11-08T18:26:57.8482637+09:00",
     "Key": "achvLoss",
     "Value": {
       "type": "Int",
-      "value": 38
+      "value": 40
     }
   },
   "achvFighter": {
