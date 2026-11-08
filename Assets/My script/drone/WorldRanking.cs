@@ -100,8 +100,12 @@ public class WorldRanking : UdonSharpBehaviour
     public void _SetBadge(int b)
     {
         badge = b;
+        badgeTries = 0;
         nextSend = Mathf.Max(nextSend, Time.time + 1f);
+        Draw();   // 自分の行の称号は、選んだらすぐ変える（ほかの人の画面には、サーバー経由で数分後）
     }
+    private bool badgeReq;   // 今送っているのが称号か（断られたら送り直す）
+    private int badgeTries;  // 送り直した回数（届かない設定の人で、ずっと送り続けないように 5 回まで）
 
     // JoinLog から: 自分の最高記録が上がった
     public void _Offer(int score)
@@ -149,6 +153,7 @@ public class WorldRanking : UdonSharpBehaviour
         {
             busy = true; busyUntil = Time.time + 15f;
             VRCStringDownloader.LoadUrl(badgeUrls[badge], (IUdonEventReceiver)this);
+            badgeReq = true;
             badgeSent = badge;
             PlayerData.SetInt("worldSentBadge", badgeSent);
             nextSend = Time.time + 15f;
@@ -168,6 +173,7 @@ public class WorldRanking : UdonSharpBehaviour
     {
         busy = false;
         string s = result.Result;
+        if (badgeReq) { badgeReq = false; if (s == null || !s.Contains("\"ok\":true")) BadgeRetry(); return; }
         if (s == null || !s.Contains("\"top\"")) return;   // 送った時の返事（{"ok":true}）は読まない
         DataToken tok;
         if (!VRCJson.TryDeserializeFromJson(s, out tok) || tok.TokenType != TokenType.DataDictionary) return;
@@ -193,9 +199,19 @@ public class WorldRanking : UdonSharpBehaviour
         Draw();
     }
 
+    // 称号をサーバーに断られた・届かなかった: 少し待って送り直す
+    void BadgeRetry()
+    {
+        if (++badgeTries > 5) return;
+        badgeSent = -1;
+        PlayerData.SetInt("worldSentBadge", -1);
+        nextSend = Time.time + 20f;
+    }
+
     public override void OnStringLoadError(IVRCStringDownload result)
     {
         busy = false;
+        if (badgeReq) { badgeReq = false; BadgeRetry(); return; }
         if (result != null && result.Url != null && readUrl != null && result.Url.Get() == readUrl.Get()) { readFailed = true; Draw(); }
     }
 
@@ -258,12 +274,15 @@ public class WorldRanking : UdonSharpBehaviour
         VRCPlayerApi[] ps = new VRCPlayerApi[VRCPlayerApi.GetPlayerCount()];
         VRCPlayerApi.GetPlayers(ps);
         bool[] used = new bool[ps.Length];
+        bool mine = false;   // 自分の記録の行（送った最高記録と同じ点数の、最初の行）には、今選んでいる称号を出す
         for (int i = 0; i < topN; i++)
         {
             string nm = NameFor(topS[i], ps, ps.Length, used);
             string col = i == 0 ? "#ffd84a" : (i == 1 ? "#d8e2ee" : (i == 2 ? "#e0a070" : "#ffffff"));
             string cn = Country(topC[i], l);
-            string bn = achievements != null ? achievements._Name(topB[i], l) : "";
+            int bi = topB[i];
+            if (!mine && optIn && sent > 0 && topS[i] == sent && badge >= 0) { mine = true; bi = badge; }
+            string bn = achievements != null ? achievements._Name(bi, l) : "";
             t += "\n<color=" + col + ">" + (i + 1) + ".</color>  <b>" + topS[i] + "</b>" + pts[l] + "   " + (bn != "" ? "<color=#ffcf7a>《" + bn + "》</color> " : "") + (nm != "" ? "<color=#7fe0ff>" + nm + "</color>" : "<color=#6f8090>—</color>") + (cn != "" ? "  <color=#c8d4e0>" + cn + "</color>" : "") + "  <size=60%><color=#6f8090>" + topD[i] + "</color></size>";
         }
         if (topN == 0) t += "\n<color=#9fb4c8>" + none[l] + "</color>";

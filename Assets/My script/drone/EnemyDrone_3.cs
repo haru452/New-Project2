@@ -12,6 +12,8 @@ public partial class EnemyDrone
         lSmooth = Vector3.zero;
         cState = 0; cTimer = 0f; cNoPlayer = 0f;
         RequestSerialization();
+        if (lowFuel) refuelUntil = Time.time + refuelSeconds;   // 燃料切れで戻った: 補給が終わるまで飛ばない
+        lowFuel = false; fuelSet = false;
         chasing = null; cachedPrey = null;
         SetFiring(false);
         gearForceDown = true;
@@ -70,7 +72,7 @@ public partial class EnemyDrone
             if (!rb.isKinematic) ParkNow();
             else { rb.MovePosition(p); rb.MoveRotation(carrierRef.rotation * parkRotLocal); }   // 動いている空母の甲板に乗ったまま
             bool present = carrierShip == null || carrierShip._Present();
-            if (cNearest < carrierWarnRange && present) cTimer += dt; else cTimer = 0f;
+            if (cNearest < carrierWarnRange && present && Time.time >= refuelUntil) cTimer += dt; else cTimer = 0f;
             if (cTimer >= launchDelay)
             {
                 cState = 1; cTimer = 0f;
@@ -118,6 +120,8 @@ public partial class EnemyDrone
             {
                 cState = 2; cTimer = 0f; cNoPlayer = 0f;
                 RequestSerialization();
+                fuelLeft = Random.Range(fuelMinMinutes, fuelMaxMinutes) * 60f;   // 燃料は 1 機ずつバラバラ
+                lowFuel = false; fuelSet = true;
                 gearForceDown = false;
                 hasHome = true;
                 home = carrierRef.position;
@@ -137,12 +141,15 @@ public partial class EnemyDrone
             float gr = BaseGroundY(rb.position);
             if (cState != 2 || gr < -9000f || rb.position.y - gr > 30f || cTimer > 3f) { rb.detectCollisions = true; colOff = false; }
         }
+        if ((cState == 2 || cState == 3) && !fuelSet) { fuelLeft = Random.Range(fuelMinMinutes, fuelMaxMinutes) * 60f; fuelSet = true; }   // 飛んでいる途中で持ち主になった
+        if (cState == 2 || cState == 3) fuelLeft -= dt;
         if (cState == 2)
         {
             if (cNearest > carrierRange) cNoPlayer += dt; else cNoPlayer = 0f;
             if (cNoPlayer > 15f) { cState = 3; RequestSerialization(); }
+            else if (fuelLeft <= 0f) { cState = 3; lowFuel = true; RequestSerialization(); }   // 燃料切れ: 戦っていても戻って着陸する
         }
-        else if (cState == 3 && cNearest < carrierWarnRange) { cState = 2; cNoPlayer = 0f; gearForceDown = false; RequestSerialization(); }
+        else if (cState == 3 && !lowFuel && cNearest < carrierWarnRange) { cState = 2; cNoPlayer = 0f; gearForceDown = false; RequestSerialization(); }
         return false;
     }
     public bool _Alive() { return rb != null && rb.gameObject.activeInHierarchy && (target == null || !target._IsDestroyed()); }
@@ -400,5 +407,24 @@ public partial class EnemyDrone
             gunAudio.pitch = Random.Range(1.0f, 1.15f);
             gunAudio.PlayOneShot(gunAudio.clip, 0.6f);
         }
+    }
+
+    // アストラル空港のまわり（非戦闘地域 2.5km）には入らない: 近づいたら中へ向かう分を消して、外へ向きを変える
+    Vector3 AvoidAstral(Vector3 pos, Vector3 dir)
+    {
+        if (gameMode == null || gameMode.astralAirport == null) return dir;
+        Vector3 fn = pos - gameMode.astralAirport.position; fn.y = 0f;
+        float fm = fn.magnitude;
+        float edge = gameMode.astralNoCombatRadius + 800f;
+        if (fm >= edge) return dir;
+        Vector3 outD = fm > 1f ? fn / fm : Forward();
+        outD.y = 0f; outD.Normalize();
+        Vector3 hd = new Vector3(dir.x, 0f, dir.z);
+        float inward = Vector3.Dot(hd, -outD);
+        if (inward > 0f) hd += outD * inward;                        // 中へ向かう分を消す
+        hd += outD * Mathf.Clamp01((edge - fm) / 800f) * 1.5f;       // 近いほど強く外へ
+        if (hd.sqrMagnitude < 0.01f) hd = outD;
+        hd.Normalize();
+        return new Vector3(hd.x, dir.y, hd.z).normalized;
     }
 }

@@ -143,6 +143,18 @@ public class Subtitles : UdonSharpBehaviour
         Color col = (spkColor != null && idx < spkColor.Length) ? spkColor[idx] : Color.white;
 
         Debug.Log("[Subtitles] 表示: " + c.name + " / 乗っている機体の番号 " + MyPlane());
+        Display(who, t, col, c.length);
+    }
+
+    // 音声の一覧に無い文字を、いつもの字幕と同じ所に出す（英語の時も出す。AreaBoundary の無線など）
+    public void _ShowText(string who, string t, Color col, float dur)
+    {
+        if (t == null || t.Length == 0) return;
+        Display(who, t, col, dur);
+    }
+
+    void Display(string who, string t, Color col, float len)
+    {
         HideAll();
         TextMeshPro msg = null;
         TextMeshPro nm = null;
@@ -173,9 +185,9 @@ public class Subtitles : UdonSharpBehaviour
         curMsg = msg;
         fullText = t;
         revealStart = Time.time;
-        revealDur = Mathf.Clamp(t.Length * 0.05f, 0.25f, Mathf.Max(0.25f, c.length * 0.8f));
+        revealDur = Mathf.Clamp(t.Length * 0.05f, 0.25f, Mathf.Max(0.25f, len * 0.8f));
         shownKey = -1;
         msg.text = "";
-        hideAt = Time.time + c.length + 0.5f;
+        hideAt = Time.time + len + 0.5f;
     }
 }

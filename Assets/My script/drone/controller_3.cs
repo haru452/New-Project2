@@ -216,7 +216,8 @@ public partial class controller
             float elevK = qbar > qRef ? qRef / qbar : 1f;
             float ailK = V > rollRefSpeed ? rollRefSpeed / V : 1f;
             float ailC = ail * ailK;
-            float a1g = mass * 9.81f / (Mathf.Max(qbar, 1f) * S * clAlpha) + a0;
+            // フラップの揚力も入れる（入れないと、フラップを下ろした時に揚力が余って機首が上がっていく）
+            float a1g = (mass * 9.81f / (Mathf.Max(qbar, 1f) * S) - flapLift * flapPos) / clAlpha + a0;
             float cmT = Mathf.Min(cm0, -cmAlpha * Mathf.Sin(a1g));
             float L = clBeta * beta + clAileron * ailC * ailEff + clpEff * ph + clYawRate * rh + wingDrop;
             float M = cmT + cmAlpha * Mathf.Sin(alpha) + cmElevator * elev * elevK + cmPitchDamping * qh;
@@ -383,7 +384,7 @@ public partial class controller
                 return false;
             }
             ammo = maxAmmo;   // カタパルト上で弾を補充
-            missileLeft = maxMissiles; guidedLeft = maxGuided; flares = maxFlares;
+            missileLeft = maxMissiles; guidedLeft = maxGuided; flares = maxFlares; RefillTorpedoes();
             // 接続中: シャトルに固定されているので前後左右には動かない
             Vector3 v = rb.velocity;
             rb.velocity = new Vector3(0f, Mathf.Min(v.y, 0f), 0f);

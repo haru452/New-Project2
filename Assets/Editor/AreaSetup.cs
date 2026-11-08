@@ -7,15 +7,16 @@ using UnityEngine;
 using UdonSharpEditor;
 using TMPro;
 
-// 海を広げる（半径 8km → 14km）＋ 作戦範囲（元の海の広さ）から出た時の警告
-//  ・作戦範囲 = 元の海と同じ四角（Ocean の位置を中心に、たて・よこ ±8km）
+// 海を広げる（±21km）＋ 作戦範囲（±16km）から出た時の警告
+//  ・作戦範囲 = Ocean の位置を中心に、たて・よこ ±16km の四角（元は ±8km → ±10km → アストラル島を動かしたので ±16km）
 //  ・範囲外に出ると、ガウリア帝国司令部の声・文字と、戻る方向を指す矢印（AreaBoundary.cs）
 // メニュー「Tools/作戦範囲と広い海を設定する」。1 回目はプログラムを作るだけのことがある（もう一度実行）
 public static partial class FlightSetup
 {
     const string AreaScriptPath = "Assets/My script/drone/AreaBoundary.cs";
     const string AreaAssetPath = "Assets/My script/drone/AreaBoundary.asset";
-    const float OpAreaHalf = 8000f;   // 元の海の半径（作戦範囲）
+    const float OpAreaHalf = 16000f;  // 作戦範囲のたて・よこの半分（海は ±21km。勝利の部屋・歴史の間は中心から東へ 25km）
+    const float AreaIgnoreBeyond = 22000f;   // これより遠い所（勝利の部屋・歴史の間）では範囲外の警告を出さない
 
     static readonly string[] AreaWarn =
     {
@@ -39,6 +40,21 @@ public static partial class FlightSetup
         "你已返回作战范围。继续执行任务。",
     };
     static readonly string[] AreaSpeaker = { "Gauria Imperial Command", "ガウリア帝国 司令部", "高里亚帝国 司令部" };
+
+    // Backup_flight/run_area.flag があれば、コンパイル後に 1 回だけ自動で実行する（続けて夜の明かりも作り直す）
+    [InitializeOnLoadMethod]
+    static void AreaAuto()
+    {
+        EditorApplication.delayCall += () =>
+        {
+            const string flag = "Backup_flight/run_area.flag";
+            if (!File.Exists(flag)) return;
+            if (EditorApplication.isPlayingOrWillChangePlaymode || EditorApplication.isCompiling || EditorApplication.isUpdating) { AreaAuto(); return; }
+            File.Delete(flag);
+            RunArea();
+            DayNightSetup.Run();   // 滑走路の明かり（アストラル空港の場所は GameMode から）
+        };
+    }
 
     [MenuItem("Tools/作戦範囲と広い海を設定する")]
     public static void RunArea()
@@ -131,6 +147,7 @@ public static partial class FlightSetup
         Vector3 c = ocean.transform.position;
         ab.center = new Vector2(c.x, c.z);
         ab.halfSize = new Vector2(OpAreaHalf, OpAreaHalf);
+        ab.ignoreBeyond = AreaIgnoreBeyond;
         ab.arrow = arrowGo.transform; ab.arrowGo = arrowGo;
         ab.msgText = tmp; ab.msgGo = msgGo; ab.msgTf = msgGo.transform;
         ab.radio = au;
@@ -140,7 +157,22 @@ public static partial class FlightSetup
         ab.warnText = AreaWarn; ab.repeatText = AreaRepeat; ab.backText = AreaBack; ab.speaker = AreaSpeaker;
         ab.subtitles = Object.FindObjectOfType<Subtitles>(true);
         if (ab.subtitles == null) log.AppendLine("WARNING: Subtitles が無い（言語は English になる）");
+        ab.voiceBus = Object.FindObjectOfType<VoiceBus>(true);   // 声が重ならないように（無ければ「Tools/音声が重ならないようにする」）
+        if (ab.voiceBus == null) log.AppendLine("注意: VoiceBus が無い → 範囲外の声がほかの声と重なる（「Tools/音声が重ならないようにする」を実行）");
         UdonSharpEditorUtility.CopyProxyToUdon(ab);
+
+        // アストラル空港の場所を GameMode に入れる（非戦闘地域・滑走路の明かりが使う）
+        var gmA = Object.FindObjectOfType<GameMode>(true);
+        var islA = GameObject.Find("Astral island(アストラル）");
+        Transform apA = islA != null ? islA.transform.Find("AstralAirport") : null;
+        if (gmA != null && apA != null)
+        {
+            Undo.RecordObject(gmA, "Area setup");
+            gmA.astralAirport = apA;
+            UdonSharpEditorUtility.CopyProxyToUdon(gmA);
+            log.AppendLine("アストラル空港: " + apA.position.ToString("F0") + "（非戦闘地域 " + gmA.astralNoCombatRadius.ToString("F0") + "m）");
+        }
+        else log.AppendLine("ERROR: アストラル空港（Astral island の AstralAirport）か GameMode が見つからない → 非戦闘地域が働かない");
 
         // 空母の艦隊: 範囲の外に現れて、範囲内へ入ってくる（遊覧モードでは範囲内で止まる。WarShip_4.cs）
         int cv = 0;
@@ -151,6 +183,8 @@ public static partial class FlightSetup
             w.carrierApproach = true;
             w.opCenter = ab.center;
             w.opHalf = OpAreaHalf;
+            w.approachMin = 2000f;   // 範囲の端から 2〜3.5km 外に現れる（海の端 21km より内側）
+            w.approachMax = 3500f;
             UdonSharpEditorUtility.CopyProxyToUdon(w);
             if (w.target != null)
             {
@@ -178,6 +212,7 @@ public static partial class FlightSetup
             cv++;
         }
         if (cv == 0) log.AppendLine("WARNING: 空母（noRelocate の船）が見つからない");
+        ShipAreaSetup.Apply(ab, log);   // 空母の艦隊以外の船は、範囲の中だけを走る
 
         // 音量設定（無線）に入れる
         var vs = Object.FindObjectOfType<VolumeSettings>(true);

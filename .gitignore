@@ -108,3 +108,4 @@ crashlytics-build.properties
 /ScoreServer/.wrangler/
 /ScoreServer/node_modules/
 /_to_delete/
+Thumbnails/

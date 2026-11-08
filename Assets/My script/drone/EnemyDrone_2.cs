@@ -17,10 +17,12 @@ public partial class EnemyDrone
         bool dead = target != null && target._IsDestroyed();
         if (dead)
         {
+            if (!wasDestroyed) { sinkVel = rb.isKinematic ? Vector3.zero : rb.velocity; sinkSpin = Random.Range(-90f, 90f); }
             wasDestroyed = true;
+            SetFiring(false);
+            if (target._Sinking()) { SinkStep(dt); return; }
             rb.velocity = Vector3.zero;
             rb.angularVelocity = Vector3.zero;
-            SetFiring(false);
             return;
         }
         if (wasDestroyed && carrierBased && carrierRef != null)
@@ -273,6 +275,7 @@ public partial class EnemyDrone
                 dir = new Vector3(hd.x, dir.y, hd.z).normalized;
             }
         }
+        dir = AvoidAstral(pos, dir);   // アストラル空港のまわり（非戦闘地域）には入らない（EnemyDrone_3.cs）
         dir.Normalize();
 
         // 欲しい速度との差から加速度を出し、物理的な上限で切る
@@ -532,7 +535,7 @@ public partial class EnemyDrone
         if (gameMode == null || gameMode.astralAirport == null) return;
         Vector3 aw = pos - gameMode.astralAirport.position; aw.y = 0f;
         if (aw.sqrMagnitude < 1f) aw = Vector3.forward;
-        Vector3 w = gameMode.astralAirport.position + aw.normalized * (gameMode.astralSafeRadius + 1500f);
+        Vector3 w = gameMode.astralAirport.position + aw.normalized * (gameMode.astralNoCombatRadius + 1500f);
         waypoint = new Vector3(w.x, waypoint.y, w.z);
         nextWaypointTime = Time.time + 40f;
         SetFiring(false);
@@ -540,6 +543,43 @@ public partial class EnemyDrone
 
     public bool _IsFiring() { return firing; }
     public int _AlertPlane() { return alertPlane; }
+
+    // ---- 撃墜された: 落ちて海に突っ込み、沈む（FlightTarget が沈み終わったら見た目を消す）----
+    private Vector3 sinkVel;
+    private float sinkSpin;
+    void SinkStep(float dt)
+    {
+        Vector3 pos = rb.position;
+        if (pos.y > seaLevel)
+        {
+            // 空中: 勢いのまま重力で落ちる（少しずつ空気で遅くなる）・きりもみ
+            sinkVel += Vector3.down * 9.81f * dt;
+            sinkVel *= 1f - 0.15f * dt;
+        }
+        else
+        {
+            // 海の中: すぐ遅くなって、ゆっくり沈む
+            sinkVel = Vector3.Lerp(sinkVel, Vector3.down * 2.5f, 3f * dt);
+            sinkSpin = Mathf.Lerp(sinkSpin, 0f, 2f * dt);
+        }
+        Vector3 nose = Forward();
+        Quaternion rot = Quaternion.AngleAxis(sinkSpin * dt, nose) * rb.rotation;   // 機首を軸にきりもみ
+        // 機首をだんだん落ちる向きに
+        Vector3 v = sinkVel.sqrMagnitude > 1f ? sinkVel.normalized : nose;
+        Vector3 up = rot * Vector3.up;
+        rot = Quaternion.Slerp(rot, LookFor(v, up), 0.6f * dt);
+        if (rb.isKinematic)
+        {
+            rb.MovePosition(pos + sinkVel * dt);
+            rb.MoveRotation(rot);
+        }
+        else
+        {
+            rb.velocity = sinkVel;
+            rb.angularVelocity = Vector3.zero;
+            rb.MoveRotation(rot);
+        }
+    }
 
     // ---- 空母の戦闘機 ----
     // 甲板の止まる場所に置く（物理は止める）

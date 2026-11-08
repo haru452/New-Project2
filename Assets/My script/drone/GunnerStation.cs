@@ -267,7 +267,7 @@ public class GunnerStation : UdonSharpBehaviour
 
     bool DesktopFire()
     {
-        return !isVR && (Input.GetKey(KeyCode.Return) || Input.GetKey(KeyCode.KeypadEnter));
+        return !isVR && Input.GetKey(KeyCode.Space);   // 操縦席と同じ Space
     }
 
     void UpdateInput(float dt)

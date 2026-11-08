@@ -74,6 +74,7 @@ public partial class controller
         ammo = maxAmmo;
         hp = maxHp;
         missileLeft = maxMissiles; guidedLeft = maxGuided; flares = maxFlares;
+        InitTorpedoes();
         int mn = missiles != null ? missiles.Length : 0;
         mPos = new Vector3[mn];
         mVel = new Vector3[mn];
@@ -83,6 +84,8 @@ public partial class controller
         mBurning = new bool[mn];
         mTgt = new int[mn];
         mTgtPrev = new Vector3[mn];
+        mTgtVel = new Vector3[mn];
+        mOffWarned = new bool[mn];
         if (lockBox != null) lockBox.gameObject.SetActive(false);
         if (oceanMaterial != null)
         {
@@ -104,7 +107,8 @@ public partial class controller
         {
             cockpitRoot.SetActive(false);
             // 計器だけのモード（H キー）で隠す、緑の文字の表示（Omega のみ）
-            if (cockpitRoot.transform.Find("InstrumentPanel") != null)
+            // 丸い計器の板は、本物の操縦席の計器盤にはめ込んである（MountGauges）
+            if (cockpitRoot.transform.Find("InstrumentPanel") != null || cockpitRoot.transform.Find("RealCockpit/Dash/GaugeSlot/InstrumentPanel") != null)
             {
                 string[] gn = { "MainPanel", "LeftPanel", "RightPanel", "WeaponPanel", "LogPanel", "RadarPanel" };
                 greenPanels = new GameObject[gn.Length];
@@ -200,7 +204,7 @@ public partial class controller
             // 弾とミサイルも少しずつ補充（1 秒ごとに 機銃 60 発・無誘導 2 発・ロックオン 1 発）
             if (car != null && !crashed
                 && ((respawnPoint != null && Vector3.Distance(car.transform.position, respawnPoint.position) < repairRadius) || AtAstralPad() || AtFriendlyPad())
-                && (ammo < maxAmmo || missileLeft < maxMissiles || guidedLeft < maxGuided))
+                && (ammo < maxAmmo || missileLeft < maxMissiles || guidedLeft < maxGuided || NeedsTorpedo()))
             {
                 repairing = true;
                 rearmTimer += dt;
@@ -210,6 +214,7 @@ public partial class controller
                     ammo = Mathf.Min(maxAmmo, ammo + 60);
                     missileLeft = Mathf.Min(maxMissiles, missileLeft + 2);
                     guidedLeft = Mathf.Min(maxGuided, guidedLeft + 1);
+                    AddTorpedo();
                     flares = Mathf.Min(maxFlares, flares + 4);
                 }
             }
@@ -256,6 +261,7 @@ public partial class controller
         UpdateBetray();
         UpdateEngineSound();
         UpdateMissiles(dt);
+        UpdateTorpedoes(dt);
         UpdateGear(dt);
         if (!isPiloting) return;
 
@@ -329,6 +335,11 @@ public partial class controller
             // T を 1 回押すと自動で「上昇 → 前へ加速」（使っている間は押し直しても無視）
             if (Input.GetKeyDown(KeyCode.T) && boostTimer < 0f) boostTimer = 0f;
             if (Input.GetKeyDown(KeyCode.F)) flapsDown = !flapsDown;
+            // 矢印キーでも操縦（WASD と同じ。↑ = W、← = A）。離したら 0 に戻す
+            float ap = (Input.GetKey(KeyCode.UpArrow) ? 1f : 0f) - (Input.GetKey(KeyCode.DownArrow) ? 1f : 0f);
+            float ar = (Input.GetKey(KeyCode.RightArrow) ? 1f : 0f) - (Input.GetKey(KeyCode.LeftArrow) ? 1f : 0f);
+            if (ap != 0f || ar != 0f) { inPitch = ap; inRoll = ar; arrowsHeld = true; }
+            else if (arrowsHeld) { arrowsHeld = false; inPitch = 0f; inRoll = 0f; }
         }
         throttle = Mathf.Clamp01(throttle + inThrottleCmd * throttleRate * dt);
         if (fuelKg == 0f) throttle = 0f;   // 燃料切れ: エンジンが止まる

@@ -3,7 +3,7 @@
 //   /n/<点数>  : 同じ。ただし国を保存しない（前にあった「国名を隠す」スイッチ用。今のワールドは使わない）
 //   /b/<番号>  : 称号（アチーブメント）の番号を送る（0〜31。その人の記録に付けて表示）
 //   /top       : 上位 5 つの点数を返す {"top":[{"s":点数,"d":"日付","c":"国コード","b":称号}, ...]}
-// 5 分ごとに、上位を GitHub Gist（scores.json）へ書き出す（ワールドはそれを読む。Gist は全員が読める）
+// 記録・称号を受け取った時と 5 分ごとに、上位を GitHub Gist（scores.json）へ書き出す（ワールドはそれを読む。Gist は全員が読める）
 // 同じ人の記録が何個も並ばないよう、接続元（IP）を「ランダムな塩」と混ぜた短いハッシュにして、その人の最高だけ残す
 //   （IP そのものは保存しない。塩はこのサーバーの中だけにあり、外からはハッシュから IP を戻せない）
 // 荒らし対策: 同じ接続元からは 10 秒に 1 回まで・1 日 100 回まで
@@ -96,16 +96,26 @@ function top(entries, badges) {
 }
 
 export default {
-  async fetch(request, env) {
+  async fetch(request, env, ctx) {
     const url = new URL(request.url);
     if (!(url.pathname === "/top" || /^\/[sn]\/\d{1,4}$/.test(url.pathname) || /^\/b\/\d{1,2}$/.test(url.pathname))) return new Response("not found", { status: 404 });
     const stub = env.BOARD.get(env.BOARD.idFromName("global"));
-    return stub.fetch(request);
+    const res = await stub.fetch(request);
+    // 記録・称号を受け取ったら、すぐ Gist を書き換える（5 分待たずにワールドの表示に出る）
+    if (url.pathname !== "/top") {
+      const body = await res.clone().text();
+      if (body.includes('"ok":true')) ctx.waitUntil(pushGist(env, stub));
+    }
+    return res;
   },
 
-  // 5 分ごと: Gist へ書き出す
+  // 5 分ごと: Gist へ書き出す（念のため。普段は受け取った時にすぐ書き出す）
   async scheduled(event, env, ctx) {
-    const stub = env.BOARD.get(env.BOARD.idFromName("global"));
+    await pushGist(env, env.BOARD.get(env.BOARD.idFromName("global")));
+  },
+};
+
+async function pushGist(env, stub) {
     const res = await stub.fetch(new Request("https://board/top"));
     const data = await res.text();
     const r = await fetch(`https://api.github.com/gists/${env.GIST_ID}`, {
@@ -118,8 +128,7 @@ export default {
       body: JSON.stringify({ files: { "scores.json": { content: data } } }),
     });
     if (!r.ok) console.log("gist update failed", r.status, await r.text());
-  },
-};
+}
 
 function json(o) {
   return new Response(JSON.stringify(o), {

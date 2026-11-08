@@ -259,8 +259,7 @@ public static partial class MuseumSetup
             Box("Low", ez, new Vector3(ex, 0.65f, (zE0 + far) * 0.5f), new Vector3(0.1f, 1.3f, far - zE0), low, true);
             Box("Low", ez, new Vector3(-(ex + side + 0.2f) * 0.5f, 0.65f, zE0), new Vector3(ex - side - 0.2f, 1.3f, 0.1f), low, true);
             Box("Low", ez, new Vector3((ex + side + 0.2f) * 0.5f, 0.65f, zE0), new Vector3(ex - side - 0.2f, 1.3f, 0.1f), low, true);
-            var p11 = Panel(ez, "Panel_p11", P2 + "p11.png", new Vector3(0f, 0f, far - 0.2f), 180f, 2.4f, 2.4f * 2880f / 2048f, 0.35f, frame);
-            ModeSwitch(p11, log);
+            // 第11パネル（あなたが選んだ道）は歴史の間へ移した（HistoryRoomSetup.cs の PlaceP11）。博物館には作らない
             SetupMemorialAt(ez, new Vector3(0f, 0f, zE0 + 1.5f), 180f, P2 + "p12.png", 1.9f, 1.9f * 1280f / 2048f, null, frame, log);
             // 慰霊の間に入ると曲が替わる範囲（分岐の通路の出口から奥まで）
             var mz = new GameObject("MemorialZone").transform; mz.SetParent(R, false);
@@ -419,22 +418,6 @@ public static partial class MuseumSetup
             var t = Tex(P2 + docs[i] + ".png", 2048);
             if (t != null) Quad(docs[i], top, new Vector3(i == 0 ? -0.48f : 0.48f, 0f, 0f), new Vector2(0.8f, 0.8f * 2200f / 1700f), Mat("V2_" + docs[i], t, Color.white));
         }
-    }
-
-    // 第11パネル: モードで絵を替える
-    static void ModeSwitch(Transform panel, StringBuilder log)
-    {
-        if (panel == null) return;
-        var face = panel.Find("Face"); if (face == null) return;
-        var gm = Object.FindObjectOfType<GameMode>(true);
-        var tEx = Tex(P2 + "p11_ex.png", 2048); var tRc = Tex(P2 + "p11_rc.png", 2048);
-        var mp = UdonSharpUndo.AddComponent<ModePanel>(panel.gameObject);
-        mp.gameMode = gm;
-        mp.target = face.GetComponent<Renderer>();
-        mp.exercise = Mat("V2_p11_ex", tEx, Color.white);
-        mp.recon = Mat("V2_p11_rc", tRc, Color.white);
-        UdonSharpEditorUtility.CopyProxyToUdon(mp);
-        log.AppendLine("第11パネル: モードで切り替え（遊覧 = 合同演習 / 普通・ハード = 偵察）" + (gm == null ? " ※GameMode が無い" : ""));
     }
 
     // 音（BGM・音声ガイド）と範囲・音声ガイドの台

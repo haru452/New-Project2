@@ -17,6 +17,26 @@ public partial class WarShip
     public float opInset = 1200f;         // 輪のコースは範囲の端からこれより内側
     public float approachMin = 2500f;     // 現れる場所: 範囲の端からこれ以上外
     public float approachMax = 4500f;     //             これ以下
+    [Header("空母以外: 作戦範囲の中だけを走る（ShipAreaSetup が設定）")]
+    public bool keepInArea;
+    public float areaInset = 600f;        // 範囲の端からこれより内側を走る (m)
+
+    // アストラル空港のまわり（非戦闘地域 2.5km）に入るか。margin = 船・艦隊の幅のぶん外側まで
+    bool NearAstral(Vector3 q, float margin)
+    {
+        if (gameMode == null || gameMode.astralAirport == null) return false;
+        Vector3 d = q - gameMode.astralAirport.position; d.y = 0f;
+        return d.magnitude < gameMode.astralNoCombatRadius + margin;
+    }
+
+    // 作戦範囲の中か（空母の艦隊は外から入ってくるので見ない）
+    bool InArea(Vector3 q)
+    {
+        if (!keepInArea || carrierApproach) return true;
+        float h = opHalf - areaInset;
+        return Mathf.Abs(q.x - opCenter.x) <= h && Mathf.Abs(q.z - opCenter.y) <= h;
+    }
+
     [UdonSynced] private double spawnTime;   // 沈められて別の場所に現れた時刻（0 = 戦闘が始まって出てくる時）
     private float approachLen, ringLen;
 
@@ -96,6 +116,7 @@ public partial class WarShip
             {
                 Vector3 fa = sampPos[k] - avoidCenter; fa.y = 0f;
                 if (fa.magnitude < avoidRadius + 300f) return false;   // 出撃地点の近くは通らない
+                if (NearAstral(sampPos[k], pathMargin + 300f)) return false;   // アストラル空港のまわりは通らない
             }
         for (int k = 0; k < sampPos.Length; k++)
         {

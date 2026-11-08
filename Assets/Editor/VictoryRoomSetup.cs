@@ -6,7 +6,7 @@ using UdonSharpEditor;
 using TMPro;
 
 // 空母を倒した後の部屋（「Tools/作戦範囲と広い海を設定する」から一緒に作る）
-//  ・作戦範囲の中心の、海のずっと下（y = -3000）に、閉じた部屋を置く（外は見えない）
+//  ・海の外（作戦範囲の中心から 25km 東）の y = -90 に、閉じた部屋を置く（外は見えない。-100 より下はスポーンへ戻される）
 //  ・空母が沈んで 5 秒後、機体に乗っている人だけここへ移動する（CarrierVictory.cs）
 //  ・部屋のボタンで main room（スポーン地点）へ戻れる（DoorTeleport.cs）
 public static partial class FlightSetup
@@ -14,6 +14,10 @@ public static partial class FlightSetup
     const string VictoryScriptPath = "Assets/My script/drone/CarrierVictory.cs";
     const string VictoryAssetPath = "Assets/My script/drone/CarrierVictory.asset";
     const float RoomW = 14f, RoomH = 5f;
+    // 部屋の置き場所: VRChat は RespawnHeightY（-100m）より下に行くとスポーンへ戻すので、それより上に置く。
+    // その高さだと海底と重なるので、海（±14km）の外へ離す（歴史の間も、この部屋の 80m 東）
+    public const float RoomY = -90f;
+    public const float RoomFarX = 25000f;
 
     static readonly string[] VictoryMsg =
     {
@@ -29,7 +33,10 @@ public static partial class FlightSetup
         if (old != null) Undo.DestroyObjectImmediate(old);
         var root = new GameObject("VictoryRoom");
         Undo.RegisterCreatedObjectUndo(root, "Area setup");
-        root.transform.position = new Vector3(areaCenter.x, -3000f, areaCenter.z);
+        root.transform.position = new Vector3(areaCenter.x + RoomFarX, RoomY, areaCenter.z);
+        var sd = Object.FindObjectOfType<VRC.SDK3.Components.VRCSceneDescriptor>();
+        if (sd != null && RoomY <= sd.RespawnHeightY + 5f)
+            log.AppendLine("ERROR: 勝利の部屋が、スポーンへ戻される高さ（RespawnHeightY " + sd.RespawnHeightY + "）より下にある → 部屋に行けない");
 
         var floorMat = SolidMat("VictoryFloor", new Color(0.12f, 0.13f, 0.16f));
         var wallMat = SolidMat("VictoryWall", new Color(0.22f, 0.25f, 0.30f));

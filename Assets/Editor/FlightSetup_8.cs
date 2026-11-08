@@ -510,12 +510,14 @@ public static partial class FlightSetup
                 fi2.transform.position = sp - Vector3.up * 2f;
                 var fim = fi2.main;
                 fim.loop = true;
-                fim.startLifetime = new ParticleSystem.MinMaxCurve(0.6f, 1.2f);
+                fim.startLifetime = new ParticleSystem.MinMaxCurve(ShipFireBoost.FireLifeMin, ShipFireBoost.FireLifeMax);
                 fim.startSpeed = new ParticleSystem.MinMaxCurve(2f, 6f);
-                fim.startSize = new ParticleSystem.MinMaxCurve(4f, 8f);
+                fim.startSize = new ParticleSystem.MinMaxCurve(ShipFireBoost.FireSizeMin, ShipFireBoost.FireSizeMax);   // 煙に隠れない大きさ
                 fim.startColor = new ParticleSystem.MinMaxGradient(new Color(1f, 0.45f, 0.1f, 0.9f), new Color(1f, 0.8f, 0.3f, 0.9f));
                 fim.gravityModifier = -0.3f;
-                fim.maxParticles = 300;
+                fim.maxParticles = 500;
+                fi2.GetComponent<ParticleSystemRenderer>().sortingFudge = ShipFireBoost.FireFudge;   // 煙より手前に描く
+                sm2.GetComponent<ParticleSystemRenderer>().sortingFudge = ShipFireBoost.SmokeFudge;
                 var fish = fi2.shape; fish.enabled = true; fish.shapeType = ParticleSystemShapeType.Sphere; fish.radius = 3f;
                 SetFade(fi2, new Color(1f, 0.7f, 0.3f), new Color(0.6f, 0.1f, 0.05f));
                 fires.Add(fi2);

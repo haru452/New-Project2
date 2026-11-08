@@ -36,23 +36,9 @@ public static partial class MuseumSetup
             src.Add(t); roots.Add(root);
         }
         if (src.Count == 0) { log.AppendLine("ミニチュア: 島が見つからない"); return; }
-        // 四角い Terrain の台（一番多い高さ）は海に沈める: 台の高さ - 1m が海面になるように下げる
+        // 高さは、海図（ChartMapSetup）と同じく「当たり判定の高さ」を使う（Terrain の絵の高さとずれている所があるため）。
+        //   海面 + 0.3m より低い所は海として描かない → 海図と同じ島の形になり、四角い台が出ない
         var drop = new float[src.Count];
-        for (int i = 0; i < src.Count; i++)
-        {
-            var td = src[i].terrainData; float py = src[i].transform.position.y;
-            var hist = new Dictionary<int, int>();
-            for (int y = 0; y <= 64; y++) for (int x = 0; x <= 64; x++)
-                {
-                    int bin = Mathf.FloorToInt(py + td.GetInterpolatedHeight(x / 64f, y / 64f));
-                    int c; hist.TryGetValue(bin, out c); hist[bin] = c + 1;
-                }
-            int best = 0, bc = -1;
-            foreach (var kv in hist) if (kv.Value > bc) { bc = kv.Value; best = kv.Key; }
-            // 本物の島の四角い台はもう海に沈めてあるので、ここでは下げない。ペラゴス島（海面すぐ上の基地）が沈まないよう、全部 1.5m 上げる
-            drop[i] = -1.5f;
-            log.AppendLine("ミニチュア: " + labels[i] + " は 1.5m 上げる（一番多い高さ " + best + "m）");
-        }
         // 陸のある範囲から縮尺を決める
         Bounds land = new Bounds(); bool has = false;
         for (int ti = 0; ti < src.Count; ti++)
@@ -61,8 +47,8 @@ public static partial class MuseumSetup
             var td = t.terrainData; Vector3 p = t.transform.position;
             for (int y = 0; y <= 32; y++) for (int x = 0; x <= 32; x++)
                 {
-                    float h = p.y + td.GetInterpolatedHeight(x / 32f, y / 32f) - drop[ti];
-                    if (h < SeaY + 0.5f) continue;
+                    float h = ColH(t, x / 32f, y / 32f);
+                    if (h < SeaY + 0.3f) continue;
                     Vector3 w = new Vector3(p.x + x / 32f * td.size.x, 0f, p.z + y / 32f * td.size.z);
                     if (!has) { land = new Bounds(w, Vector3.zero); has = true; } else land.Encapsulate(w);
                 }
@@ -82,7 +68,7 @@ public static partial class MuseumSetup
             for (int y = 0; y <= N; y++) for (int x = 0; x <= N; x++)
                 {
                     float u = x / (float)N, w = y / (float)N;
-                    float h = p.y + td.GetInterpolatedHeight(u, w) - drop[i];
+                    float h = ColH(t, u, w);
                     hgt[x, y] = h;
                     float wx = p.x + u * td.size.x, wz = p.z + w * td.size.z;
                     verts.Add(new Vector3((wx - c0.x) * s, seaTop + Mathf.Max(h - SeaY, -2f) * v, (wz - c0.z) * s));
@@ -90,7 +76,7 @@ public static partial class MuseumSetup
                 }
             for (int y = 0; y < N; y++) for (int x = 0; x < N; x++)
                 {
-                    if (Mathf.Max(Mathf.Max(hgt[x, y], hgt[x + 1, y]), Mathf.Max(hgt[x, y + 1], hgt[x + 1, y + 1])) < SeaY + 0.2f) continue;
+                    if (Mathf.Max(Mathf.Max(hgt[x, y], hgt[x + 1, y]), Mathf.Max(hgt[x, y + 1], hgt[x + 1, y + 1])) < SeaY + 0.3f) continue;
                     int a = y * (N + 1) + x, b = a + 1, cI = a + N + 1, d = cI + 1;
                     tris.Add(a); tris.Add(cI); tris.Add(b); tris.Add(b); tris.Add(cI); tris.Add(d);
                 }
@@ -142,11 +128,55 @@ public static partial class MuseumSetup
             Bounds mb = mesh.bounds;
             var lab = new GameObject("Label"); lab.transform.SetParent(ig.transform, false);
             lab.transform.localPosition = new Vector3(mb.center.x, Mathf.Max(mb.max.y, seaTop) + 0.12f, mb.center.z);
-            var tm = lab.AddComponent<TextMeshPro>();
-            tm.text = labels[i]; tm.fontSize = 0.18f * size; tm.alignment = TextAlignmentOptions.Center; tm.color = new Color(1f, 0.95f, 0.8f);
-            tm.rectTransform.sizeDelta = new Vector2(0.35f * size, 0.05f * size);
+            // 表と裏に 1 枚ずつ（裏から見ると左右反転するので、裏は描かない材質にして、反対向きのもう 1 枚を置く）
+            for (int side = 0; side < 2; side++)
+            {
+                var lg = side == 0 ? lab : new GameObject("LabelBack");
+                if (side == 1) { lg.transform.SetParent(lab.transform, false); lg.transform.localRotation = Quaternion.Euler(0f, 180f, 0f); }
+                var tm = lg.AddComponent<TextMeshPro>();
+                tm.text = labels[i]; tm.fontSize = 0.18f * size; tm.alignment = TextAlignmentOptions.Center; tm.color = new Color(1f, 0.95f, 0.8f);
+                tm.rectTransform.sizeDelta = new Vector2(0.35f * size, 0.05f * size);
+                tm.fontSharedMaterial = OneSidedLabelMat(tm);
+            }
             log.AppendLine("ミニチュア: " + labels[i] + "（建物 " + nb + " 個）");
         }
         log.AppendLine("ミニチュア: 縮尺 1/" + (1f / s).ToString("F0") + "（高さは 3 倍）");
+    }
+
+    // Terrain の当たり判定の高さ（u, w は 0〜1）。当たらなければ海の底
+    static float ColH(Terrain t, float u, float w)
+    {
+        var td = t.terrainData; Vector3 p = t.transform.position;
+        var col = t.GetComponent<TerrainCollider>();
+        Vector3 o = new Vector3(p.x + u * td.size.x, p.y + td.size.y + 50f, p.z + w * td.size.z);
+        if (col != null && col.enabled && col.Raycast(new Ray(o, Vector3.down), out RaycastHit hit, td.size.y + 200f)) return hit.point.y;
+        return SeaY - 5f;
+    }
+
+    // 名札の材質: 裏面を描かない（左右反転した字が見えないように）
+    static Material OneSidedLabelMat(TextMeshPro tm)
+    {
+        string mp = MusDir + "/Mini/MiniLabel.mat";
+        var m = AssetDatabase.LoadAssetAtPath<Material>(mp);
+        if (m == null || m.mainTexture != tm.font.material.mainTexture)
+        {
+            if (m != null) AssetDatabase.DeleteAsset(mp);
+            m = new Material(tm.font.material);
+            AssetDatabase.CreateAsset(m, mp);
+        }
+        m.SetFloat("_CullMode", 2f);   // 2 = 裏を描かない
+        EditorUtility.SetDirty(m);
+        return m;
+    }
+
+    // Backup_flight/run_mini.flag がある時に「ミニチュアだけ作り直す」を 1 回だけ
+    [InitializeOnLoadMethod]
+    static void MiniFlag() { EditorApplication.delayCall += MiniFlagTry; }
+    static void MiniFlagTry()
+    {
+        if (!File.Exists("Backup_flight/run_mini.flag")) return;
+        if (EditorApplication.isPlayingOrWillChangePlaymode || EditorApplication.isCompiling || EditorApplication.isUpdating) { EditorApplication.delayCall += MiniFlagTry; return; }
+        File.Delete("Backup_flight/run_mini.flag");
+        RebuildMiniature();
     }
 }

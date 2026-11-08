@@ -76,6 +76,9 @@ public static class LangImages
         foreach (var t in Object.FindObjectsOfType<Transform>(true))
         {
             if (t.name != name) continue;
+            bool hist = false;   // 歴史の間（main room の艦橋のコピー）の中の物は使わない
+            for (var h = t; h != null; h = h.parent) if (h.name == "HistoryRoom") hist = true;
+            if (hist) continue;
             if (under == null) return t.gameObject;
             for (var p = t.parent; p != null; p = p.parent) if (p.name == under) return t.gameObject;
         }

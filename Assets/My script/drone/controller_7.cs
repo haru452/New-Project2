@@ -82,6 +82,7 @@ public partial class controller
             cpWeapons.text = WeaponLine(0, "1  GUN", ammo.ToString())
                 + "\n" + WeaponLine(1, "2  RKT", missileLeft.ToString() + " / " + maxMissiles.ToString())
                 + "\n" + WeaponLine(2, "3  MSL", guidedLeft.ToString() + " / " + maxGuided.ToString())
+                + "\n" + TorpedoLine()
                 + "\n<size=80%>   X  FLR  " + flares.ToString() + "</size>";
         }
         if (cpLock != null)
@@ -95,6 +96,7 @@ public partial class controller
                 else if (lockCand >= 0) lk = "<color=#ffc040>LOCKING...</color>";
                 else lk = "<color=#3a8a98>SEARCH</color>";
             }
+            if (weapon == 3 && Time.time >= noLockMsgUntil) lk = TorpedoStatus();
             cpLock.text = lk;
         }
 
@@ -334,19 +336,12 @@ public partial class controller
     {
         int lv = burnLevel;
         float t = Time.time;
-        // 揺れ（コックピット全体を細かく震わせる）
-        float amp = lv >= 3 ? 0.008f : (lv == 2 ? 0.004f : (lv == 1 ? 0.0015f : 0f));
+        // コックピットを揺らすのはやめた（2026-11-08）。いつも元の位置
+        float amp = 0f;
         if (cockpitRoot != null)
             cockpitRoot.transform.localPosition = cockpitBasePos + (amp > 0f ? new Vector3(Random.Range(-amp, amp), Random.Range(-amp, amp), Random.Range(-amp, amp) * 0.5f) : Vector3.zero);
-        // 赤い点滅
-        if (damageTint != null && damageTintMat != null)
-        {
-            float pulse = 0.5f + 0.5f * Mathf.Sin(t * (lv >= 3 ? 9f : 5f));
-            float a = lv >= 3 ? 0.12f + 0.16f * pulse : (lv == 2 ? 0.04f + 0.09f * pulse : 0f);
-            bool on = a > 0.001f;
-            if (damageTint.enabled != on) damageTint.enabled = on;
-            if (on) damageTintMat.SetColor("_Color", new Color(1f, 0.05f, 0.02f, a));
-        }
+        // 画面を赤く点滅させるのはやめた（2026-11-08。機体が燃えている見た目だけにする）
+        if (damageTint != null && damageTint.enabled) damageTint.enabled = false;
         // 警報音
         if (alarmAudio != null)
         {
@@ -478,6 +473,13 @@ public partial class controller
                 {
                     if (!pc._MslActive(i)) continue;
                     if (PlaceMslBlip(used, pc._MslPos(i), pc == this ? 0 : 1, me, f, r, true)) used++;
+                }
+                // 魚雷（落ちている間も、走っている間も）
+                int tn = pc._TrpCount();
+                for (int i = 0; i < tn && used < radarMslDots.Length; i++)
+                {
+                    if (!pc._TrpActive(i)) continue;
+                    if (PlaceMslBlip(used, pc._TrpPos(i), pc == this ? 0 : 1, me, f, r, true)) used++;
                 }
             }
         }

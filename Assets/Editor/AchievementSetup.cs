@@ -89,7 +89,7 @@ public static partial class FlightSetup
         if (font == null && wr.text != null) font = wr.text.font;
         if (font != null)
         {
-            var chars = new StringBuilder();
+            var chars = new StringBuilder("←→");   // ボタンの矢印（◀ ▶ はフォントに無いので使わない）
             foreach (var src in new[] { AchScript, RankScriptPath, "Assets/My script/drone/GameMode.cs" })
                 if (File.Exists(src)) foreach (char ch in File.ReadAllText(src)) if (ch > 127 && chars.ToString().IndexOf(ch) < 0) chars.Append(ch);
             string missing;
@@ -134,7 +134,7 @@ public static partial class FlightSetup
             lab.transform.localPosition = b.transform.localPosition + new Vector3(0f, 0f, -0.07f);
             var lt = lab.AddComponent<TextMeshPro>();
             if (tmp.font != null) lt.font = tmp.font;
-            lt.text = k == 0 ? "◀" : "▶";
+            lt.text = k == 0 ? "←" : "→";
             lt.fontSize = 1.4f; lt.color = new Color(0.1f, 0.08f, 0.05f); lt.alignment = TextAlignmentOptions.Center;
             lt.rectTransform.sizeDelta = new Vector2(0.4f, 0.25f);
             var ab = UdonSharpUndo.AddComponent<AchievementButton>(b);
@@ -172,30 +172,32 @@ public static partial class FlightSetup
             Undo.RecordObject(ft, "Achievements"); ft.maxHp = 150; UdonSharpEditorUtility.CopyProxyToUdon(ft); cvHp++;
         }
         log.AppendLine("空母の HP を 150 にしました（" + cvHp + " 隻）");
-        // 空母の艦隊で対空砲を持つ 2 隻: 艦隊にしかない船（S5 の 2 隻）。ほかの艦隊の船は持たない
+        // 空母の艦隊で対空砲を持つ船: S2・S3 だけ（ShipS23Setup.cs と同じ）。ほかの艦隊の船は持たない
         int aaN = 0;
         foreach (var w in Object.FindObjectsOfType<WarShip>(true))
         {
             bool fleet = w.useFormation || (w.escorts != null && w.escorts.Length > 0);
             if (!fleet) continue;
-            bool want = w.useFormation && HasModel(w.transform, "/S5.prefab");
+            bool want = w.useFormation && ShipS23Setup.IsS23(w);
             if (want) aaN++;
             if (w.fleetAA == want) continue;
             Undo.RecordObject(w, "Achievements"); w.fleetAA = want; UdonSharpEditorUtility.CopyProxyToUdon(w);
         }
-        log.AppendLine("空母の艦隊の対空砲: " + aaN + " 隻（S5）" + (aaN != 2 ? "  ★注意: 2 隻ではない" : ""));
-        // 空母の艦隊が出てくるまでの時間（FlightSetup_9.cs の CarrierAppearDelay。★今はデバッグ用に 60 秒）
+        log.AppendLine("空母の艦隊の対空砲: " + aaN + " 隻（S2・S3）");
+        // 空母の艦隊が出てくるまでの時間（FlightSetup_9.cs の CarrierAppearDelay = 600 秒）
         int fleetN = 0;
         foreach (var w in Object.FindObjectsOfType<WarShip>(true))
         {
             if (w.appearDelay <= 0f || w.appearDelay == CarrierAppearDelay) continue;
+            bool cvFleet = w.useFormation || (w.target != null && w.target.kind == 2);
+            if (!cvFleet) continue;   // 後から出てくる S2・S3 の護衛艦は別（ShipS23Setup.cs）
             Undo.RecordObject(w, "Achievements"); w.appearDelay = CarrierAppearDelay; UdonSharpEditorUtility.CopyProxyToUdon(w); fleetN++;
         }
         var gmd = Object.FindObjectOfType<GameMode>(true);
         if (gmd != null)
         {
             Undo.RecordObject(gmd, "Achievements");
-            gmd.fleetAnnounceAt = Mathf.Max(0f, CarrierAppearDelay - 60f);   // 出てくる 60 秒前に「艦隊が向かってきている」
+            gmd.fleetAnnounceAt = FleetAnnounceAt;   // 司令部の「艦隊（旗艦ユリシーズ）が向かってきている」の無線
             UdonSharpEditorUtility.CopyProxyToUdon(gmd);
         }
         log.AppendLine("空母の艦隊が出てくるまで: " + CarrierAppearDelay + " 秒（" + fleetN + " 隻を変更）" + (CarrierAppearDelay < 600f ? "  ★デバッグ用。公開前に 600 に戻す" : ""));
@@ -207,15 +209,42 @@ public static partial class FlightSetup
         log.AppendLine("アチーブメント: 板を置いてつなぎました（位置 " + pos + "、CarrierVictory " + cv + " 個）");
     }
 
-    // この船の中に、指定のプレハブ（例 "/S5.prefab"）の見た目があるか
-    static bool HasModel(Transform root, string prefabSuffix)
+    // 司令部の艦隊の無線を流す時刻（戦闘が始まってから）。空母と同じ 10 分（空母は範囲の外に出てから入ってくるので、無線の後に近づいてくる）
+    const float FleetAnnounceAt = 600f;
+
+    // 無線の時刻だけ入れる（ほかは何も変えない）
+    [MenuItem("Tools/艦隊の無線の時刻を入れる")]
+    public static void SetFleetAnnounce()
     {
-        foreach (Transform t in root.GetComponentsInChildren<Transform>(true))
+        var gmd = Object.FindObjectOfType<GameMode>(true);
+        if (gmd == null) { Debug.Log("GameMode が無い"); return; }
+        Undo.RecordObject(gmd, "Fleet announce");
+        gmd.fleetAnnounceAt = FleetAnnounceAt;
+        UdonSharpEditorUtility.CopyProxyToUdon(gmd);
+        PrefabUtility.RecordPrefabInstancePropertyModifications(gmd);
+        UnityEditor.SceneManagement.EditorSceneManager.MarkSceneDirty(gmd.gameObject.scene);
+        System.IO.File.WriteAllText("Backup_flight/fleet_announce_log.txt", "艦隊の無線: 戦闘が始まって " + FleetAnnounceAt + " 秒後（空母は " + CarrierAppearDelay + " 秒後）");
+    }
+    // Backup_flight/run_achievements.flag がある時に「アチーブメントを設定する」を 1 回だけ
+    [InitializeOnLoadMethod]
+    static void AchievementFlag() { EditorApplication.delayCall += AchievementFlagTry; }
+    static void AchievementFlagTry()
+    {
+        if (!System.IO.File.Exists("Backup_flight/run_achievements.flag")) return;
+        if (EditorApplication.isPlayingOrWillChangePlaymode || EditorApplication.isCompiling || EditorApplication.isUpdating) { EditorApplication.delayCall += AchievementFlagTry; return; }
+        System.IO.File.Delete("Backup_flight/run_achievements.flag");
+        RunAchievementSetup();
+    }
+    [InitializeOnLoadMethod]
+    static void FleetAnnounceFlag()
+    {
+        EditorApplication.delayCall += () =>
         {
-            string p = PrefabUtility.GetPrefabAssetPathOfNearestInstanceRoot(t.gameObject);
-            if (!string.IsNullOrEmpty(p) && p.EndsWith(prefabSuffix)) return true;
-        }
-        return false;
+            if (!System.IO.File.Exists("Backup_flight/run_fleetann.flag")) return;
+            if (EditorApplication.isPlayingOrWillChangePlaymode) return;
+            System.IO.File.Delete("Backup_flight/run_fleetann.flag");
+            SetFleetAnnounce();
+        };
     }
 
     static TextMeshPro AchText(Transform p, string name, Vector3 lp, Vector2 size, float fontSize, TextAlignmentOptions align, TMP_FontAsset font)

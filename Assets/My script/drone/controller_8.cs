@@ -29,6 +29,7 @@ public partial class controller
         if (radarRose != null) radarRose.localRotation = Quaternion.Euler(0f, 0f, hdg);   // 機首が常に上
 
         UpdateMissileBlips(me, f, r);
+        UpdateFuelGuide(me, f, r);   // 燃料が少ない時の矢印（controller_10.cs）
 
         // 島の地図: 自分の位置と機首の向きに合わせる
         Renderer mr = usingGunnerRadar ? radarMapG : radarMap;
@@ -424,10 +425,11 @@ public partial class controller
         SendCustomEventDelayedSeconds(nameof(_AfterCrash), 0.5f);   // 墜落した後と同じ: 修理・補給して格納庫へ
     }
 
-    // 座席は Disable Station Exit をオンにしている（オフだとWASDで降りてしまう）ので、ジャンプで自分で降りる
+    // 座席は Disable Station Exit をオンにしている（オフだとWASDで降りてしまう）ので、自分で降ろす
+    //  VR: ジャンプボタンで降りる。デスクトップ: Space は撃つのに使うので、降りるのは Enter（controller_4 の UpdateVoice）
     public override void InputJump(bool value, UdonInputEventArgs args)
     {
-        if (!value || !isPiloting || station == null) return;
+        if (!value || !isPiloting || station == null || !isVR) return;
         station.ExitStation(Networking.LocalPlayer);
     }
 }

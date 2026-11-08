@@ -31,6 +31,7 @@ public partial class controller
     public void _TeleportPilotHome()
     {
         if (respawnPoint == null) return;
+        if (joinLog != null && joinLog._HistoryPending()) return;   // 新しい歴史の間へ直接連れていくので、I-402 には戻さない
         Networking.LocalPlayer.TeleportTo(respawnPoint.position + Vector3.up * 1f, respawnPoint.rotation);
     }
 
@@ -41,7 +42,7 @@ public partial class controller
         floating = false;
         hp = maxHp;   // 格納庫に戻ったら修理済み
         fuelKg = -1f;  // 燃料も満タン（次に使う時に満たす）
-        missileLeft = maxMissiles; guidedLeft = maxGuided; flares = maxFlares;
+        missileLeft = maxMissiles; guidedLeft = maxGuided; flares = maxFlares; RefillTorpedoes();
         ammo = maxAmmo;
         velValid = false;
         if (!Networking.IsOwner(car)) return;
@@ -72,21 +73,24 @@ public partial class controller
             if (Input.GetKeyDown(KeyCode.Alpha1) || Input.GetKeyDown(KeyCode.Keypad1)) weapon = 0;
             if (Input.GetKeyDown(KeyCode.Alpha2) || Input.GetKeyDown(KeyCode.Keypad2)) weapon = 1;
             if (Input.GetKeyDown(KeyCode.Alpha3) || Input.GetKeyDown(KeyCode.Keypad3)) weapon = 2;
+            if (Input.GetKeyDown(KeyCode.Alpha4) || Input.GetKeyDown(KeyCode.Keypad4)) weapon = 3;
         }
         else
         {
             // 左トリガー: 短く押す（離した時）と武器の切り替え、1 秒長押しで音声案内のオン/オフ
             if (cycleInput && !cyclePrev) { cycleStart = Time.time; voiceToggleDone = false; }
             if (cycleInput && !voiceToggleDone && Time.time - cycleStart >= 1f) { voiceToggleDone = true; ToggleVoice(); }
-            if (!cycleInput && cyclePrev && !voiceToggleDone && Time.time - cycleStart < 0.6f) weapon = (weapon + 1) % 3;
+            if (!cycleInput && cyclePrev && !voiceToggleDone && Time.time - cycleStart < 0.6f) weapon = (weapon + 1) % 4;
             cyclePrev = cycleInput;
         }
-        bool trig = useHeld || (!isVR && (Input.GetKey(KeyCode.Return) || Input.GetKey(KeyCode.KeypadEnter)));
+        bool trig = useHeld || (!isVR && Input.GetKey(KeyCode.Space));   // デスクトップ: 左クリックか Space で撃つ（SaccFlight と同じ）
+        if (catapult != null) trig = false;   // カタパルトの上では武器を使えない（銃・ミサイル・魚雷）
         bool down = trig && !trigPrev;
         trigPrev = trig;
         fireInput = weapon == 0 && trig;
         if (down && weapon == 1) TryFireMissile(false);
         if (down && weapon == 2) TryFireMissile(true);
+        if (down && weapon == 3) TryDropTorpedo();
         UpdateLock(dt);
     }
 
@@ -114,7 +118,8 @@ public partial class controller
         if (boosting) fuelFlow += FuelFlow(1f, fuelRefSpeed, 1f) * 4f;
         fuelKg = Mathf.Max(fuelKg - fuelFlow * dt, 0f);
         float frac = fuelKg / Mathf.Max(fuelCapKg, 0.0001f);
-        if (frac < 0.2f && !lowFuelSaid) { lowFuelSaid = true; QueueVoice(voiceLowFuel); }
+        // 「燃料が少ない」の声: 50% を切ったら。無線などとかぶると捨てられるので、ほかの声が流れていない時に流す
+        if (frac < 0.5f && !lowFuelSaid && (voiceBus == null || !voiceBus._OtherBusy())) { lowFuelSaid = true; QueueVoice(voiceLowFuel); }
         if (fuelKg <= 0f && !emptySaid) { emptySaid = true; PlayVoiceNow(voiceFuelEmpty); }
     }
 
@@ -123,7 +128,7 @@ public partial class controller
         if (fuelKg < 0f) InitFuel();
         if (fuelKg >= fuelCapKg) return;
         fuelKg = Mathf.Min(fuelCapKg, fuelKg + fuelCapKg / Mathf.Max(refuelSeconds, 1f) * dt);
-        if (fuelKg / fuelCapKg > 0.25f) lowFuelSaid = false;
+        if (fuelKg / fuelCapKg > 0.55f) lowFuelSaid = false;   // 補給して 55% を超えたら、また言えるように
         emptySaid = false;
     }
 
@@ -262,6 +267,7 @@ public partial class controller
     {
         if (enemyRadio == null || c == null) return;
         RelayVoice(c, 1);
+        if (voiceBus != null) { voiceBus._Play(enemyRadio, c, 20f, false); return; }   // ほかの声が終わってから
         enemyRadio.Stop();
         enemyRadio.clip = c;
         enemyRadio.Play();
@@ -443,6 +449,8 @@ public partial class controller
         if (!isVR && Input.GetKeyDown(KeyCode.H)) ToggleGaugeOnly();
         if (!isVR && Input.GetKeyDown(KeyCode.G)) ToggleGear();
         if (!isVR && Input.GetKeyDown(KeyCode.X)) DropFlares();
+        // デスクトップ: Enter で機体から降りる（SaccFlight と同じ。Space は撃つのに使う）
+        if (!isVR && (Input.GetKeyDown(KeyCode.Return) || Input.GetKeyDown(KeyCode.KeypadEnter)) && station != null) station.ExitStation(Networking.LocalPlayer);
 
         if (!hasTakenOff && catapult == null && !grounded && !floating && altitude > 30f) hasTakenOff = true;
         // カタパルト以外（水面から）で飛び立った時も、3 秒後から
@@ -496,20 +504,35 @@ public partial class controller
             }
         }
 
-        // 順番に流す（重ならないように）
-        if (voiceAudio != null && vQCount > 0 && !voiceAudio.isPlaying)
+        // 順番に流す（重ならないように）。AI の声は優先度が低い:
+        //   ほかの声（敵の無線・司令部の放送・アストラル空港・範囲外の警告）とかぶったら捨てる。8 秒より古い案内も捨てる
+        if (voiceBus != null && voiceBus._OtherBusy()) vQCount = 0;
+        while (vQCount > 0 && Time.time - vQueueAt[0] > 8f)
         {
-            voiceAudio.clip = vQueue[0];
-            for (int k = 1; k < vQCount; k++) vQueue[k - 1] = vQueue[k];
+            for (int k = 1; k < vQCount; k++) { vQueue[k - 1] = vQueue[k]; vQueueAt[k - 1] = vQueueAt[k]; }
             vQCount--;
-            if (voiceAudio.clip != null) voiceAudio.Play();
+        }
+        if (voiceAudio != null && vQCount > 0 && !voiceAudio.isPlaying && (voiceBus == null || !voiceBus._Busy()))
+        {
+            AudioClip next = vQueue[0];
+            for (int k = 1; k < vQCount; k++) { vQueue[k - 1] = vQueue[k]; vQueueAt[k - 1] = vQueueAt[k]; }
+            vQCount--;
+            if (next != null)
+            {
+                if (voiceBus != null) voiceBus._PlayAi(voiceAudio, next);
+                else { voiceAudio.clip = next; voiceAudio.Play(); }
+            }
         }
     }
 
     // 「偵察任務である」の放送と、最初の AMA の警告（amaBroadcast）が流れている間は true
+    // 護衛艦の無線が流れている間（ミサイル・戦闘機の方向の声を流さない）
+    bool EscortTalking() { return gameMode != null && gameMode._EscortTalking(); }
+
     bool ClockMuted()
     {
         if (briefing || Time.time < briefingUntil) return true;
+        if (gameMode != null && gameMode._IsSightseeing()) return true;   // 遊覧モード（平和な間）は敵機の方向を言わない。ミサイルの警告だけ
         if (gameMode != null && gameMode.radio != null && gameMode.radio.isPlaying) return true;   // ワールド全員に流す放送（偵察任務など）
         if (enemyRadio != null && enemyRadio.isPlaying && enemyRadio.clip == amaBroadcast) return true;
         return false;
@@ -521,6 +544,7 @@ public partial class controller
         if (!voiceEnabled || c == null || voiceAudio == null) return;
         RelayVoice(c, 2);
         vQCount = 0;
+        if (voiceBus != null) { voiceBus._PlayAiNow(voiceAudio, c); return; }   // ほかの声が流れていたら捨てる
         voiceAudio.Stop();
         voiceAudio.clip = c;
         voiceAudio.Play();

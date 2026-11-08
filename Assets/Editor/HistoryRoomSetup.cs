@@ -22,10 +22,111 @@ public static partial class FlightSetup
 
     static readonly string[] HistoryMsg =
     {
-        "<size=140%><color=#ff5040>A NEW HISTORY</color></size>\nThe fighting in this patrol mission would spark the naval war to come,\nand the Pelagos Islands would become a sea of fire.",
-        "<size=140%><color=#ff5040>新しい歴史</color></size>\nこの警戒任務における戦闘が、のちの海戦を引き起こし、\nペラゴス諸島は戦火の海となる。",
-        "<size=140%><color=#ff5040>新的历史</color></size>\n这次警戒任务中的战斗引发了之后的海战，\n佩拉戈斯群岛化为战火之海。",
+        "<size=140%><color=#ff5040>AFTER THIS PATROL MISSION</color></size>\nThe fighting in this patrol mission would spark the naval war to come,\nand the Pelagos Islands would become a sea of fire.",
+        "<size=140%><color=#ff5040>この哨戒任務の後</color></size>\nこの哨戒任務における戦闘が、のちの海戦を引き起こし、\nペラゴス諸島は戦火の海となる。",
+        "<size=140%><color=#ff5040>这次巡逻任务之后</color></size>\n这次巡逻任务中的战斗引发了之后的海战，\n佩拉戈斯群岛化为战火之海。",
     };
+
+    // 文字と曲だけ入れ直す（部屋は作り直さない）。Backup_flight/run_history_text.flag があれば、コンパイル後に 1 回だけ自動で
+    [InitializeOnLoadMethod]
+    static void HistoryTextAuto()
+    {
+        EditorApplication.delayCall += () =>
+        {
+            const string flag = "Backup_flight/run_history_text.flag";
+            if (!File.Exists(flag)) return;
+            if (EditorApplication.isPlayingOrWillChangePlaymode || EditorApplication.isCompiling || EditorApplication.isUpdating) { HistoryTextAuto(); return; }
+            File.Delete(flag);
+            RunHistoryText();
+        };
+    }
+
+    // 曲: 「凪の郷愁」エルム凪（BOOTH https://booth.pm/ja/items/7691728・クレジット必須）。部屋の中にいる間だけ。自分にだけ聞こえる
+    static void SetupHistoryBgm(HistoryRoom hr, StringBuilder log)
+    {
+        var au = hr.GetComponent<AudioSource>();
+        if (au == null) au = Undo.AddComponent<AudioSource>(hr.gameObject);
+        au.clip = AssetDatabase.LoadAssetAtPath<AudioClip>("Assets/My script/drone/Audio/history_nagi_no_kyoushu.mp3");
+        au.playOnAwake = false; au.loop = true; au.spatialBlend = 0f; au.volume = 0f; au.priority = 64;
+        Undo.RecordObject(hr, "History bgm");
+        hr.bgm = au;
+        UdonSharpEditorUtility.CopyProxyToUdon(hr);
+        log.AppendLine(au.clip != null ? "曲: 凪の郷愁（エルム凪）" : "注意: Assets/My script/drone/Audio/history_nagi_no_kyoushu.mp3 が無い（曲が流れない）");
+    }
+
+    [MenuItem("Tools/歴史の間の文字と曲を直す")]
+    public static void RunHistoryText()
+    {
+        var log = new StringBuilder();
+        log.AppendLine("HistoryText " + System.DateTime.Now);
+        var hr = Object.FindObjectOfType<HistoryRoom>(true);
+        if (hr == null) log.AppendLine("ERROR: 歴史の間（HistoryRoom）が無い");
+        else
+        {
+            Undo.RecordObject(hr, "History text");
+            hr.msg = HistoryMsg;
+            UdonSharpEditorUtility.CopyProxyToUdon(hr);
+            if (hr.text != null) { Undo.RecordObject(hr.text, "History text"); hr.text.text = HistoryMsg[1]; EditorUtility.SetDirty(hr.text); }
+            SetupHistoryBgm(hr, log);
+            EditorSceneManager.MarkSceneDirty(SceneManager.GetActiveScene());
+            log.AppendLine("歴史の間の文字と曲を入れ直しました。シーンを保存してください");
+        }
+        Directory.CreateDirectory("Backup_flight");
+        File.WriteAllText("Backup_flight/history_text_log.txt", log.ToString());
+        Debug.Log(log.ToString());
+    }
+
+    // 博物館の第11パネル（Panel_p11「あなたが選んだ道」）を、歴史の間の西の壁の前に置く
+    //  ・部屋を作り直しても消えないように、部屋とは別の入れ物（HistoryRoomPanels）に入れる
+    //  ・Backup_flight/run_place_p11.flag があれば、コンパイル後に 1 回だけ自動で
+    [InitializeOnLoadMethod]
+    static void PlaceP11Auto()
+    {
+        EditorApplication.delayCall += () =>
+        {
+            const string flag = "Backup_flight/run_place_p11.flag";
+            if (!File.Exists(flag)) return;
+            if (EditorApplication.isPlayingOrWillChangePlaymode || EditorApplication.isCompiling || EditorApplication.isUpdating) { PlaceP11Auto(); return; }
+            File.Delete(flag);
+            RunPlaceP11();
+        };
+    }
+
+    [MenuItem("Tools/第11パネルを歴史の間に置く")]
+    public static void RunPlaceP11()
+    {
+        var log = new StringBuilder();
+        log.AppendLine("PlaceP11 " + System.DateTime.Now);
+        try { PlaceP11(log); }
+        catch (System.Exception e) { log.AppendLine("失敗: " + e); }
+        Directory.CreateDirectory("Backup_flight");
+        File.WriteAllText("Backup_flight/place_p11_log.txt", log.ToString());
+        Debug.Log(log.ToString());
+    }
+
+    static void PlaceP11(StringBuilder log)
+    {
+        var hr = Object.FindObjectOfType<HistoryRoom>(true);
+        if (hr == null) { log.AppendLine("ERROR: 歴史の間（HistoryRoom）が無い"); return; }
+        Transform p11 = null;
+        foreach (var t in Object.FindObjectsOfType<Transform>(true)) if (t.name == "Panel_p11") { p11 = t; break; }
+        if (p11 == null) { log.AppendLine("ERROR: Panel_p11 が見つからない"); return; }
+        var holder = GameObject.Find("HistoryRoomPanels");
+        if (holder == null)
+        {
+            holder = new GameObject("HistoryRoomPanels");
+            Undo.RegisterCreatedObjectUndo(holder, "Place p11");
+        }
+        log.AppendLine("前の場所: " + p11.position.ToString("F1"));
+        Undo.SetTransformParent(p11, holder.transform, "Place p11");
+        Undo.RecordObject(p11, "Place p11");
+        // 部屋の中心（root）から西へ 11.6m（西の壁は 12m）。パネルの表（ローカルの +Z）を東（部屋の中）へ向ける
+        p11.position = hr.transform.position + new Vector3(-11.6f, 0f, 0f);
+        p11.rotation = Quaternion.Euler(0f, 90f, 0f);
+        p11.localScale = Vector3.one;
+        EditorSceneManager.MarkSceneDirty(SceneManager.GetActiveScene());
+        log.AppendLine("Panel_p11 を歴史の間の西の壁の前に置きました: " + p11.position.ToString("F1") + "（モードで絵が替わる仕組みはそのまま）。シーンを保存してください");
+    }
 
     [MenuItem("Tools/歴史の間を作る")]
     public static void RunHistoryRoomSetup()
@@ -61,9 +162,10 @@ public static partial class FlightSetup
         var old = GameObject.Find("HistoryRoom");
         if (old != null) Undo.DestroyObjectImmediate(old);
         var root = new GameObject("HistoryRoom");
+        var parts = new System.Collections.Generic.List<GameObject>();   // 近くにいない時は消す見た目
         Undo.RegisterCreatedObjectUndo(root, "History room");
         var vr = GameObject.Find("VictoryRoom");
-        Vector3 basePos = vr != null ? vr.transform.position + new Vector3(80f, 0f, 0f) : new Vector3(230f, -3000f, 75f);
+        Vector3 basePos = vr != null ? vr.transform.position + new Vector3(80f, 0f, 0f) : new Vector3(150f + FlightSetup.RoomFarX + 80f, FlightSetup.RoomY, 75f);
         root.transform.position = basePos;
 
         // 艦橋のコピー（艦橋から見た位置・向きのまま）
@@ -73,6 +175,7 @@ public static partial class FlightSetup
         copy.transform.localPosition = Vector3.zero;
         copy.transform.localRotation = bridge.rotation;
         copy.transform.localScale = bridge.lossyScale;
+        parts.Add(copy);
         // 博物館のドア（西の隔壁。見た目だけ）
         Transform md = mainRoom.transform.Find("MuseumDoor");
         if (md != null)
@@ -84,6 +187,7 @@ public static partial class FlightSetup
             mdc.transform.localRotation = Quaternion.Inverse(bridge.rotation) * md.rotation;
             mdc.transform.localScale = md.lossyScale;
             mdc.SetActive(true);
+            parts.Add(mdc);
             int s = StripLogic(mdc);
             log.AppendLine("博物館のドアをコピー（動く仕組みを " + s + " 個外した → 使えない）");
         }
@@ -186,7 +290,9 @@ public static partial class FlightSetup
         hr.subtitles = Object.FindObjectOfType<Subtitles>(true);
         hr.staticScreens = screens.ToArray();
         hr.alarmLights = lights;
+        hr.roomParts = parts.ToArray();
         UdonSharpEditorUtility.CopyProxyToUdon(hr);
+        SetupHistoryBgm(hr, log);
         var jl = Object.FindObjectOfType<JoinLog>(true);
         if (jl != null) { Undo.RecordObject(jl, "History room"); jl.historyRoom = hr; UdonSharpEditorUtility.CopyProxyToUdon(jl); }
         else log.AppendLine("ERROR: JoinLog が無い（撃墜されても連れてこられない）");

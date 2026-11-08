@@ -214,11 +214,11 @@ public static partial class FlightSetup
         var hat = Box(sp, "FireButton", new Vector3(0.012f, 0.20f, 0.03f), new Vector3(0.016f, 0.008f, 0.016f), Quaternion.identity, red);
 
         // スロットル: 左手側のコンソールの上。前に倒すほど加速
-        Box(lv, "ThrottleBox", new Vector3(-0.40f, -0.29f, 0.64f), new Vector3(0.09f, 0.06f, 0.24f), Quaternion.identity, metal);
-        Box(lv, "ThrottleSlot", new Vector3(-0.40f, -0.258f, 0.64f), new Vector3(0.02f, 0.004f, 0.2f), Quaternion.identity, black);
+        Box(lv, "ThrottleBox", new Vector3(-0.40f, -0.29f, 0.66f), new Vector3(0.09f, 0.06f, 0.24f), Quaternion.identity, metal);
+        Box(lv, "ThrottleSlot", new Vector3(-0.40f, -0.258f, 0.66f), new Vector3(0.02f, 0.004f, 0.2f), Quaternion.identity, black);
         var tp = new GameObject("ThrottlePivot").transform;
         tp.SetParent(lv, false);
-        tp.localPosition = new Vector3(-0.40f, -0.27f, 0.64f);   // 座席の左前
+        tp.localPosition = new Vector3(-0.40f, -0.27f, 0.66f);   // 座席の左前（操縦桿と左右対称）
         Rod(tp, "ThrottleArm", new Vector3(0f, 0f, 0f), new Vector3(0f, 0.13f, 0f), 0.018f, metal);
         Box(tp, "ThrottleHandle", new Vector3(0.0f, 0.15f, 0f), new Vector3(0.10f, 0.045f, 0.06f), Quaternion.identity, black);
         Box(tp, "ThrottleMark", new Vector3(0.0f, 0.174f, 0f), new Vector3(0.06f, 0.004f, 0.012f), Quaternion.identity, yellow);

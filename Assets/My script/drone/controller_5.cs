@@ -12,6 +12,7 @@ public partial class controller
     public void _GuidedMissileWarning()
     {
         if (!isPiloting || Time.time < nextMissileWarn) return;
+        if (EscortTalking()) return;   // 護衛艦の無線の間は、割り込んで止めない
         nextMissileWarn = Time.time + 3f;
         if (voiceGuided != null && voiceGuided.Length > 0) PlayVoiceNow(voiceGuided[Random.Range(0, voiceGuided.Length)]);
     }
@@ -38,6 +39,7 @@ public partial class controller
     public void _MissileWarning(Vector3 from)
     {
         if (!isPiloting || car == null || Time.time < nextMissileWarn) return;
+        if (EscortTalking()) return;   // 護衛艦の無線の間は、割り込んで止めない
         nextMissileWarn = Time.time + 3f;
         Vector3 f = axisReference != null ? axisReference.forward : -car.transform.right;
         f.y = 0f;
@@ -87,7 +89,7 @@ public partial class controller
                     clock = ((Mathf.RoundToInt(Vector3.SignedAngle(f, d, Vector3.up) / 30f) % 12) + 12) % 12;
             }
         }
-        if (clock >= 0 && voiceFireClock != null && clock < voiceFireClock.Length && voiceFireClock[clock] != null) QueueVoice(voiceFireClock[clock]);
+        if (clock >= 0 && !EscortTalking() && voiceFireClock != null && clock < voiceFireClock.Length && voiceFireClock[clock] != null) QueueVoice(voiceFireClock[clock]);
         else QueueVoice(voiceTakingFire);
     }
 
@@ -138,6 +140,7 @@ public partial class controller
         ammo = maxAmmo;
         missileLeft = maxMissiles;
         guidedLeft = maxGuided;
+        RefillTorpedoes();
     }
 
     void CrewKill(int ty)
@@ -217,13 +220,13 @@ public partial class controller
             return;
         }
         if (!astralIntroDone && d < astralCallRadius) { astralIntroDone = true; PlayRadio(astralIntro); return; }
-        if (!astralApproachDone && d < astralLandRadius && flapPos > 0.5f && airspeed < 75f && altitude < 300f)
+        bool landing = d < astralLandRadius && flapPos > 0.5f && airspeed < 75f && altitude < 300f;
+        if (!astralApproachDone && landing)
         {
             astralApproachDone = true;
             if (EnemyFighterNear(3000f))
             {
                 if (astralArgs != null && astralArgs.Length > 0) PlayRadio(astralArgs[Random.Range(0, astralArgs.Length)]);
-                if (gameMode != null) gameMode._AstralCeasefire();
             }
             else PlayRadio(astralClear);
         }
@@ -388,6 +391,7 @@ public partial class controller
     void DropFlares()
     {
         if (!isPiloting || flares <= 0 || Time.time < nextFlare || !hasTakenOff) return;
+        if (catapult != null) return;   // カタパルトの上ではフレアも使えない
         nextFlare = Time.time + 1.2f;
         flares = Mathf.Max(0, flares - 2);
         SendCustomNetworkEvent(NetworkEventTarget.All, nameof(NetFlare));
@@ -428,8 +432,9 @@ public partial class controller
         vQCount = 0;
         if (voiceAudio != null)
         {
-            voiceAudio.Stop();
             AudioClip c = voiceEnabled ? voiceOn : voiceOff;
+            if (voiceBus != null) { voiceBus._PlayAiNow(voiceAudio, c); return; }
+            voiceAudio.Stop();
             if (c != null) { voiceAudio.clip = c; voiceAudio.Play(); }
         }
     }
@@ -440,6 +445,7 @@ public partial class controller
         if (vQCount >= vQueue.Length) return;   // 多すぎる分は流さない
         for (int k = 0; k < vQCount; k++) if (vQueue[k] == c) return;
         vQueue[vQCount] = c;
+        vQueueAt[vQCount] = Time.time;
         vQCount++;
         RelayVoice(c, 0);
     }

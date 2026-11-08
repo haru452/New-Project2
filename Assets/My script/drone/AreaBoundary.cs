@@ -17,6 +17,7 @@ public class AreaBoundary : UdonSharpBehaviour
     public Vector2 center;              // x, z
     public Vector2 halfSize = new Vector2(8000f, 8000f);
     public float margin = 60f;          // 出入りの境目でちらつかないための余裕（m）
+    public float ignoreBeyond = 20000f; // 中心からこれより遠い所（海の外の勝利の部屋・歴史の間）では警告しない
 
     [Header("見た目")]
     public Transform arrow;             // 矢印（+Z が先）
@@ -29,6 +30,7 @@ public class AreaBoundary : UdonSharpBehaviour
 
     [Header("声と言葉")]
     public AudioSource radio;
+    public VoiceBus voiceBus;           // 声が重ならないように順番に流す
     public AudioClip[] warnClips;       // 出た時（1 回目）
     public AudioClip[] repeatClips;     // 戻るまで、ときどき
     public AudioClip[] backClips;       // 戻った時
@@ -60,12 +62,21 @@ public class AreaBoundary : UdonSharpBehaviour
         if (radio != null && clips != null && clips.Length > 0)
         {
             AudioClip c = clips[clipIdx % clips.Length];
-            if (c != null) { radio.clip = c; radio.Play(); }
+            if (c != null)
+            {
+                if (voiceBus != null) voiceBus._Play(radio, c, 10f, true);   // 今の声が終わったらすぐ（重ならない）
+                else { radio.clip = c; radio.Play(); }
+            }
         }
-        if (msgText != null && msgGo != null)
+        int l = Lang();
+        string who = (speaker != null && l < speaker.Length) ? speaker[l] : "";
+        if (subtitles != null)
         {
-            int l = Lang();
-            string who = (speaker != null && l < speaker.Length) ? speaker[l] : "";
+            // いつもの字幕と同じ所（乗っている間はコックピットに固定）。視線には付いてこない
+            subtitles._ShowText(who, t, new Color(1f, 0.8f, 0.3f), showFor);
+        }
+        else if (msgText != null && msgGo != null)
+        {
             msgText.text = "<color=#FFCC4D><b>" + who + "</b></color>\n" + t;
             msgGo.SetActive(true);
             hideMsgAt = Time.time + showFor;
@@ -86,6 +97,17 @@ public class AreaBoundary : UdonSharpBehaviour
         Vector3 p = lp.GetPosition();
         float dx = p.x - center.x, dz = p.z - center.y;
         float ax = Mathf.Abs(dx), az = Mathf.Abs(dz);
+        if (ax > ignoreBeyond || az > ignoreBeyond)
+        {
+            // 部屋の中: 警告も矢印も出さない（「戻った」とも言わない）
+            if (outside)
+            {
+                outside = false;
+                if (arrowGo != null) arrowGo.SetActive(false);
+                if (msgGo != null) msgGo.SetActive(false);
+            }
+            return;
+        }
         bool isOut = outside
             ? (ax > halfSize.x - margin || az > halfSize.y - margin)     // 戻るときは、少し内側まで入ったら
             : (ax > halfSize.x || az > halfSize.y);
