@@ -16,23 +16,23 @@ DATA = {
     "en": ("About the World Ranking", [
         "When ON, only your best score and your chosen title are sent (your name is never sent).",
         "Your IP address is not stored. Only your country is known, and it is shown on the ranking.",
-        "It takes 5–7 minutes to appear. Scores are sent only when \"Allow Untrusted URLs\" is ON in VRChat.",
+        "It takes a few minutes to appear. Scores are sent only when \"Allow Untrusted URLs\" is ON in VRChat.",
         "Sent scores cannot be removed. You can turn the switch OFF at any time.",
-        "For details, contact hichi2025.",
+        "Details: see the Qiita article below, or DM me on Instagram (link in hichi2025's VRChat bio).",
     ]),
     "ja": ("世界ランキングについて", [
         "オンにすると、最高点と選んだ称号だけが送られます（名前は送りません）。",
         "IPアドレスは保存しません。わかるのは国だけで、ランキングに国名が表示されます。",
-        "表示まで5〜7分かかります。VRChatの「Allow Untrusted URLs」がオンのときだけ送れます。",
+        "表示まで数分かかります。VRChatの「Allow Untrusted URLs」がオンのときだけ送れます。",
         "送った記録は取り消せません。スイッチはいつでもオフにできます。",
-        "くわしくは hichi2025 まで。",
+        "くわしくは下の Qiita の記事か、hichi2025 の VRChat の bio にある Instagram の DM まで。",
     ]),
     "zh": ("关于世界排行榜", [
         "开启后，只发送你的最高分和选择的称号（不发送名字）。",
         "不保存IP地址。只知道国家，排行榜上会显示国家名。",
-        "显示需要约5～7分钟。只有在VRChat中开启“Allow Untrusted URLs”时才能发送。",
+        "显示需要几分钟。只有在VRChat中开启“Allow Untrusted URLs”时才能发送。",
         "已发送的记录无法删除。开关可以随时关闭。",
-        "详情请联系 hichi2025。",
+        "详情请看下方的 Qiita 文章，或通过 hichi2025 的 VRChat 简介中的 Instagram 私信联系。",
     ]),
 }
 
