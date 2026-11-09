@@ -9,6 +9,7 @@ using VRC.SDKBase;
 //  ・夜だけ点く物（基地と町の窓・古い船の明かり・滑走路の灯り・飛行機の赤と緑のランプ）を出し入れする
 //  ・海と雲のシェーダーには _Udon_Night（0 = 昼, 1 = 夜）を渡す（空の映り込みを暗くする）
 //  ・戦艦は _IsNight() を見て、撃つ時にサーチライトを点ける
+//  ・夜は 2027 年公開予定（ハードモードと同じ時期）。nightEnabled = false の間はスイッチを使えず、いつも昼
 // =============================================================
 [UdonBehaviourSyncMode(BehaviourSyncMode.Manual)]
 public class DayNight : UdonSharpBehaviour
@@ -33,6 +34,9 @@ public class DayNight : UdonSharpBehaviour
     [Header("夜だけ出す物")]
     public GameObject[] nightObjects;
 
+    [Header("夜を使えるか（2027 年公開予定。公開する時は GameMode.hardEnabled と一緒にオンにする）")]
+    public bool nightEnabled = false;
+
     [Header("スイッチの見た目")]
     public TextMeshPro label;
     public Renderer switchRenderer;
@@ -44,13 +48,15 @@ public class DayNight : UdonSharpBehaviour
     void Start()
     {
         nightId = VRCShader.PropertyToID("_Udon_Night");
+        if (!nightEnabled) DisableInteractive = true;   // まだ使えない: 「押す」の表示も出さない
         Apply();
     }
 
-    public bool _IsNight() { return night; }
+    public bool _IsNight() { return night && nightEnabled; }
 
     public override void Interact()
     {
+        if (!nightEnabled) return;   // 夜はまだ使えない
         Networking.SetOwner(Networking.LocalPlayer, gameObject);
         night = !night;
         RequestSerialization();
@@ -61,6 +67,7 @@ public class DayNight : UdonSharpBehaviour
 
     void Apply()
     {
+        if (!nightEnabled) night = false;   // まだ使えない間は、いつも昼
         Material sky = night ? nightSkybox : daySkybox;
         if (sky != null) RenderSettings.skybox = sky;
         if (sun != null)
@@ -74,7 +81,9 @@ public class DayNight : UdonSharpBehaviour
         if (nightObjects != null)
             for (int i = 0; i < nightObjects.Length; i++)
                 if (nightObjects[i] != null && nightObjects[i].activeSelf != night) nightObjects[i].SetActive(night);
-        if (label != null)
+        if (label != null && !nightEnabled)
+            label.text = "<b>TIME: <color=#ffd860>DAY</color></b>\n<size=65%><color=#ff8080>NIGHT: coming in 2027</color></size>";
+        else if (label != null)
             label.text = night
                 ? "<b>TIME: <color=#9fb8ff>NIGHT</color></b>\n<size=65%>Press to switch to DAY</size>"
                 : "<b>TIME: <color=#ffd860>DAY</color></b>\n<size=65%>Press to switch to NIGHT</size>";

@@ -10,6 +10,7 @@ using VRC.Udon.Common.Interfaces;
 //  ・body を指定した場合は body ごと消す。指定しない場合は renderers / colliders を消す
 //    （潜水艦・建物・戦闘機など、元からある物に付ける時）
 //  ・0 になると爆発して消え、respawnTime 秒後に復活する
+//  ・船・飛行機（kind 0〜5）は、すぐ消さずに沈む（当たり判定だけ先に消す。動きは WarShip / EnemyDrone）。沈み終わったら消す
 //  ・耐久値と状態はワールドの全員で同期（管理はオブジェクトのオーナー）
 // =============================================================
 [UdonBehaviourSyncMode(BehaviourSyncMode.Manual)]
@@ -21,6 +22,8 @@ public class FlightTarget : UdonSharpBehaviour
     public float respawnTime = 20f;
     [Tooltip("ミサイル 1 発で減る耐久値（機銃は 1 発 1）")]
     public int missileDamage = 15;
+    [Tooltip("魚雷 1 発で減る耐久値（ふつうの船 40 を 2 発）")]
+    public int torpedoDamage = 20;
     public GameObject body;                 // 見た目と当たり判定（壊れたら非表示）
     public Renderer[] renderers;            // body が無い時に消す見た目
     public Collider[] colliders;            // body が無い時に消す当たり判定
@@ -32,6 +35,8 @@ public class FlightTarget : UdonSharpBehaviour
     [Tooltip("壊れた後に出す物（がれき・炎）")]
     public GameObject wreck;
     public ParticleSystem explosionFx;
+    [Tooltip("船・飛行機（kind 0〜5）: 壊れてから沈み終わって消えるまでの秒数（復活より前に終わるよう短くする）")]
+    public float sinkTime = 40f;
     public AudioSource explosionAudio;
 
     [UdonSynced] private int hp = -1;
@@ -40,6 +45,20 @@ public class FlightTarget : UdonSharpBehaviour
     private bool shownDestroyed;
     private bool firstApply = true;
     private bool respawnPending;
+    private float sinkStart = -1f, sinkUntil = -1f;   // 沈んでいる間（自分の画面の時刻）
+
+    bool Sinks() { return kind >= 0 && kind <= 5; }
+    // 壊れて沈んでいる途中（見た目はまだ出ている）
+    public bool _Sinking() { return destroyed && sinkUntil > 0f && Time.time < sinkUntil; }
+    // 沈み始めてから何秒たったか（沈んでいない時は -1）
+    public float _SinkElapsed() { return _Sinking() ? Time.time - sinkStart : -1f; }
+    public float _SinkDuration() { return sinkUntil - sinkStart; }
+    public void _SinkDone()
+    {
+        if (sinkUntil < 0f || Time.time < sinkUntil - 0.05f) return;
+        sinkUntil = -1f;
+        Apply();
+    }
 
     void Start()
     {
@@ -51,10 +70,22 @@ public class FlightTarget : UdonSharpBehaviour
     public void _Hit()
     {
         if (destroyed) return;
+        AddMyDamage(1);
         SendCustomNetworkEvent(NetworkEventTarget.Owner, nameof(NetHit));
     }
 
+    // 自分が削った HP（自分の画面だけ）。空母の 200 点を、削った割合で分けるのに使う
+    private int myDamage;
+    void AddMyDamage(int d)
+    {
+        int left = hp < 0 ? maxHp : hp;   // 残りより多くは数えない
+        myDamage += Mathf.Max(0, Mathf.Min(d, left));
+    }
+    public int _MyDamage() { return myDamage; }
+    public void _ClearMyDamage() { myDamage = 0; }
+
     public bool _IsDestroyed() { return destroyed || hiddenLocal; }
+    public bool _IsSunk() { return destroyed; }   // 本当に壊された（まだ出てきていないだけの時は false）
     // まだ出てきていない（空母は 10 分後に出る）: 見えない・当たらない・レーダーにも出ない（全員の画面で同じ時刻に切り替わる）
     private bool hiddenLocal;
     public void _SetHidden(bool h)
@@ -86,7 +117,21 @@ public class FlightTarget : UdonSharpBehaviour
     public void _HitMissile()
     {
         if (destroyed) return;
+        AddMyDamage(missileDamage);
         SendCustomNetworkEvent(NetworkEventTarget.Owner, nameof(NetHitBig));
+    }
+
+    // 魚雷が当たった時（撃った人の画面から呼ばれる）
+    public void _HitTorpedo()
+    {
+        if (destroyed) return;
+        AddMyDamage(torpedoDamage);
+        SendCustomNetworkEvent(NetworkEventTarget.Owner, nameof(NetHitTorpedo));
+    }
+
+    public void NetHitTorpedo()
+    {
+        ApplyDamage(torpedoDamage);
     }
 
     public void NetHitBig()
@@ -137,6 +182,16 @@ public class FlightTarget : UdonSharpBehaviour
         Apply();
     }
 
+    // 復活しない物（空母）を、モードを切り替えた時に元に戻す（オーナーに送る）
+    public void NetRevive()
+    {
+        if (!Networking.IsOwner(gameObject) || !destroyed) return;
+        hp = maxHp;
+        destroyed = false;
+        RequestSerialization();
+        Apply();
+    }
+
     public override void OnDeserialization()
     {
         Apply();
@@ -150,11 +205,25 @@ public class FlightTarget : UdonSharpBehaviour
 
     void Apply()
     {
-        if (body != null) body.SetActive(!destroyed && !hiddenLocal);
+        if (!destroyed && (hp < 0 || hp >= maxHp)) myDamage = 0;   // 満タンに戻った（モードの切り替えなど）: 数え直し
+        if (!destroyed) { sinkStart = -1f; sinkUntil = -1f; }
+        // 今壊れた船・飛行機: 沈み始める（入ってきた時にもう壊れていた物は、沈めずに消しておく）
+        if (destroyed && !shownDestroyed && !firstApply && Sinks() && !hiddenLocal)
+        {
+            float dur = sinkTime;
+            if (!noRespawn) dur = Mathf.Min(dur, respawnTime - 2f);
+            if (dur > 0.5f)
+            {
+                sinkStart = Time.time; sinkUntil = Time.time + dur;
+                SendCustomEventDelayedSeconds(nameof(_SinkDone), dur);
+            }
+        }
+        bool show = (!destroyed || _Sinking()) && !hiddenLocal;
+        if (body != null) body.SetActive(show);
         if (wreck != null) wreck.SetActive(destroyed && !hiddenLocal);
         if (renderers != null)
         {
-            for (int i = 0; i < renderers.Length; i++) if (renderers[i] != null) renderers[i].enabled = !destroyed && !hiddenLocal && !culledLocal;
+            for (int i = 0; i < renderers.Length; i++) if (renderers[i] != null) renderers[i].enabled = show && !culledLocal;
         }
         if (colliders != null)
         {

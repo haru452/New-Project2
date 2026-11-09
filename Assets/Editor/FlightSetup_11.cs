@@ -14,13 +14,14 @@ public static partial class FlightSetup
 {
     static Mesh GetOceanMesh()
     {
-        string path = FxDir + "/OceanMesh.asset";
+        // たて・よこ ±21km（元は 8km の OceanMesh.asset → 14km → 作戦範囲を ±16km に広げたので 21km）。中心ほど細かい
+        string path = FxDir + "/OceanMesh21k.asset";
         var existing = AssetDatabase.LoadAssetAtPath<Mesh>(path);
         if (existing != null) return existing;
 
         const int N = 250;
-        const float R = 8000f;
-        const float P = 2.6f;
+        const float R = 21000f;
+        const float P = 3.0f;
         var verts = new Vector3[(N + 1) * (N + 1)];
         var normals = new Vector3[verts.Length];
         for (int j = 0; j <= N; j++)

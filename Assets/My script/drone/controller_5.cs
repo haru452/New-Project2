@@ -12,6 +12,7 @@ public partial class controller
     public void _GuidedMissileWarning()
     {
         if (!isPiloting || Time.time < nextMissileWarn) return;
+        if (EscortTalking()) return;   // 護衛艦の無線の間は、割り込んで止めない
         nextMissileWarn = Time.time + 3f;
         if (voiceGuided != null && voiceGuided.Length > 0) PlayVoiceNow(voiceGuided[Random.Range(0, voiceGuided.Length)]);
     }
@@ -38,6 +39,7 @@ public partial class controller
     public void _MissileWarning(Vector3 from)
     {
         if (!isPiloting || car == null || Time.time < nextMissileWarn) return;
+        if (EscortTalking()) return;   // 護衛艦の無線の間は、割り込んで止めない
         nextMissileWarn = Time.time + 3f;
         Vector3 f = axisReference != null ? axisReference.forward : -car.transform.right;
         f.y = 0f;
@@ -87,7 +89,7 @@ public partial class controller
                     clock = ((Mathf.RoundToInt(Vector3.SignedAngle(f, d, Vector3.up) / 30f) % 12) + 12) % 12;
             }
         }
-        if (clock >= 0 && voiceFireClock != null && clock < voiceFireClock.Length && voiceFireClock[clock] != null) QueueVoice(voiceFireClock[clock]);
+        if (clock >= 0 && !EscortTalking() && voiceFireClock != null && clock < voiceFireClock.Length && voiceFireClock[clock] != null) QueueVoice(voiceFireClock[clock]);
         else QueueVoice(voiceTakingFire);
     }
 
@@ -119,6 +121,7 @@ public partial class controller
         Debug.Log("[Score] 撃破を数える ty=" + ty + " joinLog=" + (joinLog != null) + " 操縦中=" + isPiloting);
         if (joinLog == null) return;
         if (isPiloting) CrewKill(ty);
+        else if (ty == 6) return;   // 2 人乗りは廃止したので、後ろの席からは数えない
         else if (gunner != null && gunner._IsLocalGunner())
             SendCustomNetworkEvent(NetworkEventTarget.Owner, ty == 0 ? nameof(NetCrewKillAir) : (ty == 1 ? nameof(NetCrewKillShip) : (ty == 3 ? nameof(NetCrewKillCargo) : (ty == 4 ? nameof(NetCrewKillAwacs) : (ty == 5 ? nameof(NetCrewKillCvFighter) : (ty == 7 ? nameof(NetCrewKillBase) : nameof(NetCrewKillCarrier)))))));
     }
@@ -137,6 +140,7 @@ public partial class controller
         ammo = maxAmmo;
         missileLeft = maxMissiles;
         guidedLeft = maxGuided;
+        RefillTorpedoes();
     }
 
     void CrewKill(int ty)
@@ -171,7 +175,7 @@ public partial class controller
                 int kd = ft.kind;   // 0 = 飛行機, 1 = 船, 2 = 空母
                 if (kd == 0 || kd == 4 || kd == 5) joinLog._AddDroneKill();
                 else if (kd >= 1 && kd != 6) joinLog._AddShipKill();
-                if (kd >= 0 && kd != 6) CountRunKill(kd);
+                if (kd >= 0) CountRunKill(kd);   // 6 = ペラゴス基地の建物 1 つ（2 点）
                 if (kd == 6 && AllBaseBuildingsDown()) CountRunKill(7);   // 基地の建物を全部壊した: 100 点
                 if (kd == 3)
                 {
@@ -212,18 +216,42 @@ public partial class controller
         if (sight)
         {
             if (!astralIntroDone && d < astralCallRadius) { astralIntroDone = true; PlayRadio(astralWelcome); }
+            if (isPiloting && joinLog != null && AtAstralPad()) joinLog._Achieve(8);   // 8 = 観光客（遊覧モードでアストラル空港に着陸）
             return;
         }
         if (!astralIntroDone && d < astralCallRadius) { astralIntroDone = true; PlayRadio(astralIntro); return; }
-        if (!astralApproachDone && d < astralLandRadius && flapPos > 0.5f && airspeed < 75f && altitude < 300f)
+        bool landing = d < astralLandRadius && flapPos > 0.5f && airspeed < 75f && altitude < 300f;
+        if (!astralApproachDone && landing)
         {
             astralApproachDone = true;
             if (EnemyFighterNear(3000f))
             {
                 if (astralArgs != null && astralArgs.Length > 0) PlayRadio(astralArgs[Random.Range(0, astralArgs.Length)]);
-                if (gameMode != null) gameMode._AstralCeasefire();
             }
             else PlayRadio(astralClear);
+        }
+    }
+    // 普通・ハードモードでペラゴス基地に着陸した: 称号「裏切者」（9 番）
+    void UpdateTraitor()
+    {
+        if (!isPiloting || !hasTakenOff || !grounded || airspeed >= 25f || baseCenter == null || car == null || joinLog == null) return;
+        if (gameMode == null || gameMode._SightMode()) return;
+        if (FlatDist(car.transform.position, baseCenter.position) < 1500f) joinLog._Achieve(9);
+    }
+    // 隠し称号
+    //   12 不死鳥: HP 10 以下で、アストラル空港に着陸 / イ402 の修理が効く範囲を飛ぶ
+    //   13 麒麟: 普通・ハードモードで、武器を一度も使わずに 15 分飛ぶ（撃墜・降りる・撃つと最初から）
+    private float kirinTime;
+    void UpdateHiddenAchievements()
+    {
+        if (!isPiloting || joinLog == null || car == null || crashed) return;
+        if (!hasTakenOff) { kirinTime = 0f; return; }
+        if (hp <= 10f && (AtAstralPad() || (respawnPoint != null && Vector3.Distance(car.transform.position, respawnPoint.position) < repairRadius)))
+            joinLog._Achieve(12);
+        if (gameMode != null && !gameMode._SightMode() && !grounded)
+        {
+            kirinTime += Time.deltaTime;
+            if (kirinTime >= 900f) joinLog._Achieve(13);   // 15 分
         }
     }
     bool AtAstralPad()
@@ -363,6 +391,7 @@ public partial class controller
     void DropFlares()
     {
         if (!isPiloting || flares <= 0 || Time.time < nextFlare || !hasTakenOff) return;
+        if (catapult != null) return;   // カタパルトの上ではフレアも使えない
         nextFlare = Time.time + 1.2f;
         flares = Mathf.Max(0, flares - 2);
         SendCustomNetworkEvent(NetworkEventTarget.All, nameof(NetFlare));
@@ -403,8 +432,9 @@ public partial class controller
         vQCount = 0;
         if (voiceAudio != null)
         {
-            voiceAudio.Stop();
             AudioClip c = voiceEnabled ? voiceOn : voiceOff;
+            if (voiceBus != null) { voiceBus._PlayAiNow(voiceAudio, c); return; }
+            voiceAudio.Stop();
             if (c != null) { voiceAudio.clip = c; voiceAudio.Play(); }
         }
     }
@@ -415,6 +445,7 @@ public partial class controller
         if (vQCount >= vQueue.Length) return;   // 多すぎる分は流さない
         for (int k = 0; k < vQCount; k++) if (vQueue[k] == c) return;
         vQueue[vQCount] = c;
+        vQueueAt[vQCount] = Time.time;
         vQCount++;
         RelayVoice(c, 0);
     }

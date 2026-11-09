@@ -48,41 +48,42 @@ TITLE = {
 
 # (キー ja, キー en, キー zh), (説明 ja, en, zh)
 PC_ROWS = [
-    (("W / S",) * 3, ("機首を下げる / 上げる", "Nose down / up", "机头下压 / 抬起")),
-    (("A / D",) * 3, ("左右に傾ける（横転）", "Roll left / right", "向左 / 向右倾斜（横滚）")),
+    (("W / S（↑ / ↓）", "W / S (↑ / ↓)", "W / S（↑ / ↓）"), ("機首を下げる / 上げる", "Nose down / up", "机头下压 / 抬起")),
+    (("A / D（← / →）", "A / D (← / →)", "A / D（← / →）"), ("左右に傾ける（横転）", "Roll left / right", "向左 / 向右倾斜（横滚）")),
     (("Q / E",) * 3, ("機首を左右に向ける", "Yaw left / right", "机头向左 / 向右偏转")),
     (("左Shift / 左Ctrl", "Left Shift / Left Ctrl", "左Shift / 左Ctrl"), ("スロットル 上げ / 下げ", "Throttle up / down", "油门 加 / 减")),
-    (("左クリック / Enter", "Left click / Enter", "鼠标左键 / Enter"), ("撃つ", "Fire", "开火")),
-    (("1 / 2 / 3",) * 3, ("機銃 / ミサイル / 追尾ミサイル", "Gun / Missile / Guided missile", "机枪 / 导弹 / 追踪导弹")),
+    (("Space / 左クリック", "Space / Left click", "Space / 鼠标左键"), ("撃つ", "Fire", "开火")),
+    (("1 / 2 / 3 / 4",) * 3, ("機銃 / ロケット / ロックオンミサイル / 魚雷", "Gun / Rockets / Lock-on missile / Torpedo", "机枪 / 火箭 / 锁定导弹 / 鱼雷")),
+    (("X",) * 3, ("フレア", "Flares", "干扰弹")),
     (("B",) * 3, ("ブレーキ", "Brake", "刹车")),
     (("F",) * 3, ("フラップ", "Flaps", "襟翼")),
     (("G",) * 3, ("脚の出し入れ", "Landing gear", "收放起落架")),
     (("T",) * 3, ("ブースト（自動で上昇→加速）", "Boost (climb, then accelerate)", "加速推进（先自动爬升再加速）")),
     (("H",) * 3, ("計器だけ表示", "Gauges-only view", "仅显示仪表")),
     (("M",) * 3, ("R35 の音声 ON / OFF", "R35 voice on / off", "R35 语音 开 / 关")),
-    (("P",) * 3, ("ガンナーモード（後席が空いている時）", "Gunner mode (rear seat empty)", "炮手模式（后座空着时）")),
-    (("Space",) * 3, ("機体から降りる", "Exit the aircraft", "离开机体")),
+    (("Enter",) * 3, ("機体から降りる", "Exit the aircraft", "离开机体")),
 ]
 PC_NOTE = (
-    ("潜水艦のカタパルト: 左Shift でスロットルを 100% にすると発艦します。", "乗る: 潜水艦の格納庫の R35 の席に座る。"),
+    ("カタパルト: 左Shift でスロットルを 100% にすると発艦。", "乗る: 潜水艦の格納庫の R35 の席に座る。"),
     ("Catapult: hold Left Shift to 100% throttle to launch.", "Board: sit in an R35 seat in the hangar."),
     ("潜艇弹射器：按住左Shift把油门推到100%即可起飞。", "登机：坐到潜艇机库里R35的座位上。"),
 )
 VR_ROWS = [
-    (("右グリップ", "Right grip", "右握把"), ("握って操縦桿。傾ける＝上げ下げ・横転、ひねる＝ヨー", "Hold = control stick. Tilt to pitch / roll, twist to yaw", "握住＝操纵杆。倾斜＝俯仰 / 横滚，扭转＝偏航")),
-    (("左グリップ", "Left grip", "左握把"), ("握って前後に動かす＝スロットルレバー", "Hold and push / pull = throttle lever", "握住前后推拉＝油门杆")),
-    (("右スティック", "Right stick", "右摇杆"), ("左右＝ヨー　上下＝スロットル", "Left / right = yaw, up / down = throttle", "左右＝偏航　上下＝油门")),
+    (("右グリップ", "Right grip", "右握把"), ("握る＝操縦桿。握った時の手の向きが中立", "Hold = joystick. Hand angle at grip = neutral", "握住＝操纵杆。握住时的手部角度为中立")),
+    (("右手を傾ける", "Tilt right hand", "倾斜右手"), ("前後＝機首の上げ下げ　左右＝横転", "Forward / back = pitch, sideways = roll", "前后＝俯仰　左右＝横滚")),
+    (("右手をひねる", "Twist right hand", "扭转右手"), ("機首を左右に向ける（手の位置は関係なし）", "Yaw (only rotation counts, not position)", "偏航（只看旋转，与位置无关）")),
+    (("左グリップ", "Left grip", "左握把"), ("握ったまま手を前へ＝スロットル上げ　手前へ＝下げ", "Hold and move hand forward / back = throttle", "握住向前＝加油门　向后＝减油门")),
     (("右トリガー", "Right trigger", "右扳机"), ("撃つ", "Fire", "开火")),
     (("左トリガー", "Left trigger", "左扳机"), ("短く＝武器の切り替え　1秒＝R35 の音声 ON / OFF", "Tap = switch weapon, hold 1 s = R35 voice on / off", "短按＝切换武器　按住1秒＝R35 语音 开 / 关")),
     (("左スティック ↓", "Left stick ↓", "左摇杆 ↓"), ("ブレーキ", "Brake", "刹车")),
     (("左スティック ↑", "Left stick ↑", "左摇杆 ↑"), ("短く＝フラップ　1秒＝ブースト", "Tap = flaps, hold 1 s = boost", "短按＝襟翼　按住1秒＝加速推进")),
     (("左スティック ←", "Left stick ←", "左摇杆 ←"), ("短く＝脚の出し入れ　1秒＝計器だけ表示", "Tap = landing gear, hold 1 s = gauges-only view", "短按＝收放起落架　按住1秒＝仅显示仪表")),
-    (("ジャンプ", "Jump", "跳跃键"), ("機体から降りる", "Exit the aircraft", "离开机体")),
+    (("ジャンプ", "Jump", "跳跃键"), ("機体から降りる（飛行中に押さないこと）", "Exit the aircraft (not while flying!)", "离开机体（飞行中不要按）")),
 ]
 VR_NOTE = (
-    ("潜水艦のカタパルト: スロットルを 100% にすると発艦します。", "乗る: 潜水艦の格納庫の R35 の席に座る。"),
-    ("Catapult: raise the throttle to 100% to launch.", "Board: sit in an R35 seat in the hangar."),
-    ("潜艇弹射器：把油门推到100%即可起飞。", "登机：坐到潜艇机库里R35的座位上。"),
+    ("コツ: 右コントローラーを太ももの上で操縦桿のように持つ。", "カタパルト: スロットルを 100% にすると発艦。"),
+    ("Tip: rest the right controller on your leg like a joystick.", "Catapult: raise the throttle to 100% to launch."),
+    ("提示：把右手柄放在大腿上，当作操纵杆来握。", "潜艇弹射器：把油门推到100%即可起飞。"),
 )
 LI = {"ja": 0, "en": 1, "zh": 2}
 

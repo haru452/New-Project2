@@ -13,6 +13,8 @@ public partial class WarShip
         for (int k = 0; k < sampPos.Length; k++)   // 全部の点で確かめる（小さな島も避ける）
         {
             Vector3 q = sampPos[k];
+            if (!InArea(q)) return false;   // 作戦範囲の外は走らない
+            if (NearAstral(q, pathMargin + 300f)) return false;   // アストラル空港のまわり（非戦闘地域）は走らない
             Vector3 fa = q - avoidCenter;
             fa.y = 0f;
             if (fa.magnitude < avoidRadius + 300f) return false;
@@ -155,7 +157,7 @@ public partial class WarShip
             // 空母: 生き残った艦隊の船か、沈んだ場所が誰かに見えている間は移らない（復活もしない）
             if (noRelocate && relocPending && dead && CarrierGroupSeen()) folAlive = true;
             if (noRelocate && target != null) target.holdRespawn = relocPending && dead;
-            if (relocPending && dead && !folAlive)
+            if (relocPending && dead && !folAlive && !carrierApproach && !target._Sinking())   // 空母は復活しないので、別の場所へも移らない。沈み終わるまでは移らない（すぐ移ると、沈まずに消えて見える）
             {
                 relocPending = false;
                 // 次に出る場所: 近くの船が上限に達していないプレイヤーの近く（無理なら、ランダムな海）。空母はランダムな海
@@ -163,6 +165,7 @@ public partial class WarShip
                 {
                     pathSeed = Random.Range(1, 2000000000);
                     anchor = Vector3.zero;
+                    spawnTime = Networking.GetServerTimeInSeconds();   // 空母: 今から外の海を出て、範囲内へ向かう
                     RequestSerialization();
                     GeneratePath(pathSeed);
                 }
@@ -179,14 +182,23 @@ public partial class WarShip
                 {
                     pathSeed = Random.Range(1, 2000000000);
                     anchor = Vector3.zero;
+                    spawnTime = 0.0;   // 空母: 戦闘が始まって 10 分後に、外の海から出てくる
                     RequestSerialization();
                     GeneratePath(pathSeed);
+                    // 沈められていたら、新しいモードでは元に戻す（空母は戦闘中には復活しない）
+                    if (carrierApproach && target != null) target.SendCustomNetworkEvent(VRC.Udon.Common.Interfaces.NetworkEventTarget.Owner, nameof(FlightTarget.NetRevive));
+                    if (carrierApproach && escorts != null)   // 護衛の船も
+                        for (int k = 0; k < escorts.Length; k++)
+                            if (escorts[k] != null && escorts[k].target != null) escorts[k].target.SendCustomNetworkEvent(VRC.Udon.Common.Interfaces.NetworkEventTarget.Owner, nameof(FlightTarget.NetRevive));
                 }
             }
         }
 
+        // 沈んでいる間は、その場に止まる（コースが変わっても、沈み終わってから動く）
+        bool sinking = target != null && target._Sinking();
         // 貨物船: 護衛の後ろを付いて行く
-        if (leader != null)
+        if (sinking) { }
+        else if (leader != null)
         {
             if (visible || Time.time >= nextMoveUpdate)
             {
@@ -225,7 +237,9 @@ public partial class WarShip
         {
             nextCheck = Time.time + 0.5f;
             Vector3 head = lp.GetTrackingData(VRCPlayerApi.TrackingDataType.Head).position;
-            bool v = (head - transform.position).sqrMagnitude < showDistance * showDistance;
+            float d2 = (head - transform.position).sqrMagnitude;
+            bool v = d2 < showDistance * showDistance;
+            SetDetail(v && d2 < detailDistance * detailDistance);   // 近くの船だけ、航跡の泡と影
             // 「偵察任務」の無線の間は、プレイヤーの近く（5km 以内）には船を出さない（撃たない）
             if (v && gameMode != null && gameMode._Quiet()) v = false;
             // まだ出てくる時間になっていない（空母）
@@ -246,13 +260,34 @@ public partial class WarShip
             nextFxCheck = Time.time + 0.5f;
             float hr = target != null ? target._HpRatio() : 1f;
             bool alive = hr > 0f;
-            SetRates(wakeFx, alive && sampPos != null ? 1f : 0f, true);
-            SetRates(dmgSmoke, !alive ? 0f : (hr < 0.4f ? 30f : (hr < 0.75f ? 12f : 0f)), false);
-            SetRates(dmgFire, !alive ? 0f : (hr < 0.25f ? 45f : (hr < 0.5f ? 20f : 0f)), false);
+            SetRates(wakeFx, alive && sampPos != null && detailOn ? 1f : 0f, true);
+            // 沈んでいる間: 大きく燃えて、黒い煙。沈みきる前（海面だけ）になったら少し弱く
+            float sk = sinking ? Mathf.Clamp01(target._SinkElapsed() / Mathf.Max(target._SinkDuration(), 1f)) : 0f;
+            SetRates(dmgSmoke, !alive ? (sinking ? 45f : 0f) : (hr < 0.4f ? 30f : (hr < 0.75f ? 12f : 0f)), false);
+            // 炎の場所が多い船は、1 か所あたりを減らす（2 か所の時と比べて全体で 1.25 倍まで。重くしすぎない）
+            float fk = dmgFire != null && dmgFire.Length > 2 ? 2.5f / dmgFire.Length : 1f;
+            SetRates(dmgFire, fk * (!alive ? (sinking ? (sk < 0.7f ? 110f : 60f) : 0f) : (hr < 0.25f ? 45f : (hr < 0.5f ? 20f : 0f))), false);
         }
 
+        // 沈む: 傾きながら、だんだん速く海の中へ
+        if (model != null && sinking)
+        {
+            float k = Mathf.Clamp01(target._SinkElapsed() / Mathf.Max(target._SinkDuration(), 1f));
+            model.transform.localPosition = modelBasePos + Vector3.down * (sinkDepth * k * k);
+            model.transform.localRotation = modelBaseRot * Quaternion.Euler(sinkPitch * Mathf.Min(1f, k * 1.5f), 0f, sinkRoll * Mathf.Min(1f, k * 2f));
+            modelSunk = true;
+            MoveDamageFx();   // 炎と煙も一緒に（海の中の分は海面で燃える）
+        }
+        else if (modelSunk && model != null)
+        {
+            // 復活した: 元の位置・向きに戻す
+            modelSunk = false;
+            model.transform.localPosition = modelBasePos;
+            model.transform.localRotation = modelBaseRot;
+            MoveDamageFx();
+        }
         // 波でゆっくりゆれる
-        if (model != null && bobAmount > 0f)
+        else if (model != null && bobAmount > 0f)
         {
             float t = Time.time;
             model.transform.localPosition = modelBasePos + Vector3.up * Mathf.Sin(t * 0.7f) * bobAmount;
@@ -263,16 +298,7 @@ public partial class WarShip
         if (unarmed) return;   // 貨物船は撃たない
 
         // 自分が操縦しているドローンを探す
-        controller mine = null;
-        if (planes != null)
-        {
-            for (int i = 0; i < planes.Length; i++)
-            {
-                if (planes[i] == null) continue;
-                VRCPlayerApi p = planes[i]._GetPilot();
-                if (p != null && p.isLocal) { mine = planes[i]; break; }
-            }
-        }
+        controller mine = Mine();   // 0.5 秒ごとに探した結果（毎フレーム全機体を調べると重い）
         if (mine == null || mine.car == null) return;
         if (!mine._IsHostile()) return;   // 警告の間は撃たない（攻撃開始になってから）
 
@@ -286,8 +312,9 @@ public partial class WarShip
                 nextRocket = Time.time + rocketInterval * Random.Range(0.8f, 1.3f);
             }
         }
-        // 対空機銃: ハードモードの時だけ。1km 以内なら連射（撃つ・休むをくり返す）
-        if (gameMode != null && gameMode._IsHard()) UpdateAA(mine, dt);
+        // 対空機銃: fleetAA の船（S2・S3。空母の艦隊の 2 隻と、後から出てくる護衛艦）だけ。どのモードでも
+        //   1km 以内なら連射（撃つ・休むをくり返す）。ミサイルが来たらミサイルを狙う
+        if (fleetAA) UpdateAA(mine, dt);
 
         if (Time.time < nextFire) return;
 
@@ -380,18 +407,9 @@ public partial class WarShip
 
     void UpdateShells(float dt)
     {
-        if (sActive == null) return;
-        controller mine = null;
+        if (sActive == null || !AnyOn(sActive)) return;   // 飛んでいる砲弾が無ければ何もしない
+        controller mine = Mine();   // 0.5 秒ごとに探した結果
         Vector3 tp = Vector3.zero;
-        if (planes != null)
-        {
-            for (int i = 0; i < planes.Length; i++)
-            {
-                if (planes[i] == null) continue;
-                VRCPlayerApi p = planes[i]._GetPilot();
-                if (p != null && p.isLocal) { mine = planes[i]; break; }
-            }
-        }
         if (mine != null && mine.car != null) tp = mine.car.transform.position;
 
         for (int i = 0; i < shells.Length; i++)
@@ -462,17 +480,8 @@ public partial class WarShip
 
     void UpdateRockets(float dt)
     {
-        if (rActive == null) return;
-        controller mine = null;
-        if (planes != null)
-        {
-            for (int i = 0; i < planes.Length; i++)
-            {
-                if (planes[i] == null) continue;
-                VRCPlayerApi p = planes[i]._GetPilot();
-                if (p != null && p.isLocal) { mine = planes[i]; break; }
-            }
-        }
+        if (rActive == null || !AnyOn(rActive)) return;
+        controller mine = Mine();   // 0.5 秒ごとに探した結果（毎フレーム全機体を調べると重い）
         Vector3 tp = (mine != null && mine.car != null) ? mine.car.transform.position : Vector3.zero;
         for (int i = 0; i < rockets.Length; i++)
         {

@@ -8,19 +8,19 @@
     }
   },
   "soloBestS": {
-    "LastUpdated": "2026-10-28T11:12:34.4217621+09:00",
+    "LastUpdated": "2026-11-07T18:31:53.5709474+09:00",
     "Key": "soloBestS",
     "Value": {
       "type": "Int",
-      "value": 1
+      "value": 2
     }
   },
   "soloBestScore": {
-    "LastUpdated": "2026-10-28T11:12:34.4217621+09:00",
+    "LastUpdated": "2026-11-07T18:31:53.5709474+09:00",
     "Key": "soloBestScore",
     "Value": {
       "type": "Int",
-      "value": 13
+      "value": 16
     }
   },
   "soloBestA": {
@@ -72,11 +72,11 @@
     }
   },
   "worldSentBest": {
-    "LastUpdated": "2026-10-29T16:14:16.0748506+09:00",
+    "LastUpdated": "2026-11-07T18:31:53.6710933+09:00",
     "Key": "worldSentBest",
     "Value": {
       "type": "Int",
-      "value": 13
+      "value": 16
     }
   },
   "worldHideCountry": {
@@ -85,6 +85,86 @@
     "Value": {
       "type": "Bool",
       "value": false
+    }
+  },
+  "worldSentBadge": {
+    "LastUpdated": "2026-11-08T14:18:25.4831745+09:00",
+    "Key": "worldSentBadge",
+    "Value": {
+      "type": "Int",
+      "value": 22
+    }
+  },
+  "achvSel": {
+    "LastUpdated": "2026-11-08T14:18:11.2095279+09:00",
+    "Key": "achvSel",
+    "Value": {
+      "type": "Int",
+      "value": 22
+    }
+  },
+  "achvMuseum": {
+    "LastUpdated": "2026-11-08T17:35:20.7464882+09:00",
+    "Key": "achvMuseum",
+    "Value": {
+      "type": "Int",
+      "value": 9
+    }
+  },
+  "achvBits": {
+    "LastUpdated": "2026-11-08T14:09:07.2458841+09:00",
+    "Key": "achvBits",
+    "Value": {
+      "type": "Int",
+      "value": 4720663
+    }
+  },
+  "achvCrane": {
+    "LastUpdated": "2026-11-08T17:18:36.3173366+09:00",
+    "Key": "achvCrane",
+    "Value": {
+      "type": "Int",
+      "value": 10
+    }
+  },
+  "achvBoard": {
+    "LastUpdated": "2026-11-08T18:25:35.220051+09:00",
+    "Key": "achvBoard",
+    "Value": {
+      "type": "Int",
+      "value": 72
+    }
+  },
+  "achvLoss": {
+    "LastUpdated": "2026-11-08T18:26:57.8482637+09:00",
+    "Key": "achvLoss",
+    "Value": {
+      "type": "Int",
+      "value": 40
+    }
+  },
+  "achvFighter": {
+    "LastUpdated": "2026-11-07T23:26:32.7098672+09:00",
+    "Key": "achvFighter",
+    "Value": {
+      "type": "Int",
+      "value": 3
+    }
+  },
+  "vol2": {
+    "LastUpdated": "2026-11-07T22:41:05.8052244+09:00",
+    "Key": "vol2",
+    "Value": {
+      "type": "Int",
+      "value": 110
+    }
+  },
+  "achvSight": {
+    "LastUpdated": "2026-11-08T17:19:49.9485868+09:00",
+    "Key": "achvSight",
+    "Value": {
+      "type": "Int",
+      "value": 780
     }
   }
 }

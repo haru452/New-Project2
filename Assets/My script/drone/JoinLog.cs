@@ -119,13 +119,19 @@ public class JoinLog : UdonSharpBehaviour
         return n.Replace("<", "＜").Replace(">", "＞");
     }
 
-    int Points(int kind) { return kind == 0 ? 2 : (kind == 1 ? 3 : (kind == 3 ? 1 : (kind == 4 ? 4 : (kind == 5 ? 3 : (kind == 7 ? 100 : 10))))); }   // 7 = 基地の建物を全部壊した（100 点）   // 5 = 空母の戦闘機（3 点・飛行機）   // 3 = 貨物船（1 点・船）、4 = 飛ぶ警戒機（4 点・飛行機）
+    // 2026-11-08 に 1 つずつの点数を 2 倍にした（空母の 200 点と、基地を全部壊した 100 点はそのまま）
+    //   0 = 敵の戦闘機 10 点 / 1 = 軍艦 6 点 / 3 = 貨物船 2 点 / 4 = 飛ぶ警戒機 8 点 / 5 = 空母の戦闘機 14 点 / 6 = ペラゴス基地の建物 1 つ 4 点
+    //   7 = 基地の建物を全部壊した 100 点 / 2 = 空母はここでは 0 点（200 点を削った割合で分ける: _CarrierShare）
+    int Points(int kind) { return kind == 0 ? 10 : (kind == 1 ? 6 : (kind == 3 ? 2 : (kind == 4 ? 8 : (kind == 5 ? 14 : (kind == 6 ? 4 : (kind == 7 ? 100 : 0)))))); }
 
     // 撃墜した（kind: 0 = 飛行機, 1 = 船, 2 = 空母）。partner が空なら 1 人、あれば 2 人の記録
     public void _RunKill(int kind, string partner, bool hard) { _RunKillMul(kind, partner, hard, 1); }
     // mul = 得点の倍率（遊覧モードの裏切りの後は 3 倍）
+    private bool lostThisVisit;   // ワールドに入ってから撃墜されたことがあるか
     public void _RunKillMul(int kind, string partner, bool hard, int mul)
     {
+        if (kind == 2 && hard && !lostThisVisit) _Achieve(16);
+        if ((kind == 0 || kind == 5) && achievements != null) achievements._AddFighter();   // 撃墜王: 敵の戦闘機（空母の戦闘機も）。警戒機は入れない   // 16 = 白虎（ハードで、一度も撃墜されずに空母を沈めた）
         string me = Clean(Networking.LocalPlayer.displayName);
         int pts = Points(kind) * (hard ? 2 : 1) * Mathf.Max(mul, 1);
         int m = hard ? 2 : 1;
@@ -133,23 +139,52 @@ public class JoinLog : UdonSharpBehaviour
         {
             Debug.Log("[Score] 撃破 kind=" + kind + " +" + pts + " → 今回 " + (soloScore + pts) + " 点（掲示板 " + (soloBoard != null ? "あり" : "なし") + "）");
             soloScore += pts; soloMode |= m;
-            if (kind == 0 || kind == 4 || kind == 5) soloA++; else if (kind == 2) soloC++; else if (kind != 7) soloS++;
+            if (kind == 0 || kind == 4 || kind == 5) soloA++; else if (kind == 2) soloC++; else if (kind != 6 && kind != 7) soloS++;   // 基地の建物は船に数えない
             if (soloBoard != null) soloBoard._Submit(me, soloScore, soloA, soloS, soloC, soloMode);
             SaveBest("solo", soloScore, soloA, soloS, soloC, soloMode, "");
+            CheckAch(soloScore, soloA, soloS, soloC);
         }
         else
         {
             if (partner != duoPartner) { duoScore = 0; duoA = 0; duoS = 0; duoC = 0; duoMode = 0; duoPartner = partner; }   // 相方が変わったら新しい記録
             duoScore += pts; duoMode |= m;
-            if (kind == 0 || kind == 4 || kind == 5) duoA++; else if (kind == 2) duoC++; else if (kind != 7) duoS++;
+            if (kind == 0 || kind == 4 || kind == 5) duoA++; else if (kind == 2) duoC++; else if (kind != 6 && kind != 7) duoS++;
             string crew = me + " & " + Clean(partner);
             if (duoBoard != null) duoBoard._Submit(crew, duoScore, duoA, duoS, duoC, duoMode);
             SaveBest("duo", duoScore, duoA, duoS, duoC, duoMode, Clean(partner));
+            CheckAch(duoScore, duoA, duoS, duoC);
         }
+    }
+
+    // 空母が沈んだ（CarrierVictory から、全員の画面で）: 200 点を、自分が削った HP の割合でもらう
+    public void _CarrierShare(int myDamage, int maxHp, bool hard, int mul)
+    {
+        if (myDamage <= 0 || maxHp <= 0) return;
+        float share = Mathf.Min(1f, myDamage / (float)maxHp);
+        int pts = Mathf.RoundToInt(200f * share) * (hard ? 2 : 1) * Mathf.Max(mul, 1);
+        if (pts <= 0) return;
+        string me = Clean(Networking.LocalPlayer.displayName);
+        soloScore += pts; soloMode |= hard ? 2 : 1;
+        if (soloBoard != null) soloBoard._Submit(me, soloScore, soloA, soloS, soloC, soloMode);
+        SaveBest("solo", soloScore, soloA, soloS, soloC, soloMode, "");
+        CheckAch(soloScore, soloA, soloS, soloC);
     }
 
     // 歴代の自己ベストを PlayerData に保存（ワールドを出ても残る）
     public WorldRanking worldRanking;   // 世界ランキング（全インスタンス共通・名前なし）
+    public Achievements achievements;   // アチーブメント（称号）
+    public HistoryRoom historyRoom;     // 新しい歴史の間（折り鶴を納めた後に撃墜されると連れていかれる）
+    public bool _HistoryPending() { return historyRoom != null && historyRoom._Pending(); }   // これから歴史の間へ連れていく
+    public void _Achieve(int i) { if (achievements != null) achievements._Unlock(i); }
+    // 称号の判定（撃墜・点数が増えるたび）。21 古の撃墜王: ロックオンミサイルを使わずに 1 回の出撃で 100 点
+    private bool guidedUsed;   // この出撃でロックオンミサイルを撃った（撃墜されると元に戻る）
+    public void _UsedGuided() { guidedUsed = true; }
+    void CheckAch(int score, int a, int s, int c)
+    {
+        if (achievements == null) return;
+        achievements._CheckRun(score, a, s, c);
+        if (!guidedUsed && score >= 100) achievements._Unlock(21);
+    }
     void SaveBest(string kind, int score, int a, int s, int c, int mode, string partner)
     {
         VRCPlayerApi me = Networking.LocalPlayer;
@@ -167,7 +202,7 @@ public class JoinLog : UdonSharpBehaviour
     // ---- 折り鶴の加護（その場だけ）: 折り鶴を納めると、次に飛行機に乗った時に 1 回だけ +10 点 ----
     private bool blessed;
     public bool _IsBlessed() { return blessed; }
-    public void _Bless() { blessed = true; }
+    public void _Bless() { blessed = true; if (achievements != null) achievements._AddCrane(); if (historyRoom != null) historyRoom._Offered(); }   // 2 = 祈る者・17 = ユニコーン（合計 30 回）
     public void _UseBlessing()
     {
         if (!blessed) return;
@@ -176,11 +211,17 @@ public class JoinLog : UdonSharpBehaviour
         soloScore += 10;
         if (soloBoard != null) soloBoard._Submit(me, soloScore, soloA, soloS, soloC, soloMode);
         SaveBest("solo", soloScore, soloA, soloS, soloC, soloMode, "");
+        CheckAch(soloScore, soloA, soloS, soloC);
     }
 
     // 撃墜された → 今回の出撃の記録は 0 から
     public void _ResetRun()
     {
+        if (achievements != null) achievements._AddLoss();   // 称号「負けず嫌い」: 撃墜された回数
+        lostThisVisit = true;
+        if (historyRoom != null) historyRoom._ShotDown();   // 折り鶴を納めた後なら、新しい歴史の間へ
+        if (_HistoryPending() && achievements != null) achievements._Unlock(22);   // 隠し称号「歴史の旅人」: 歴史の間へ連れていかれる
+        guidedUsed = false;   // 次の出撃は、またロックオンミサイルを使っていない状態から   // 称号「白虎」はもらえなくなる（ワールドに入り直すと元に戻る）
         soloScore = 0; soloA = 0; soloS = 0; soloC = 0; soloMode = 0;
         duoScore = 0; duoA = 0; duoS = 0; duoC = 0; duoMode = 0;
     }

@@ -323,6 +323,7 @@ public static partial class FlightSetup
         foreach (var c in Object.FindObjectsOfType<controller>(true))
         {
             if (c == src || c.car == null || !IsOmega(c.car)) continue;
+            if (c.car.name == SeatSource || c.transform.IsChildOf(sCar)) continue;   // 見本（Omega_111）は絶対に変えない
             Transform seat = c.transform, car = c.car.transform;
             if (seat.parent == car && sSeat.parent == sCar)
             {
@@ -337,7 +338,8 @@ public static partial class FlightSetup
                 if (vis.Find("SeatLowered") == null) new GameObject("SeatLowered").transform.SetParent(vis, false);
             }
             var st = c.GetComponent<VRC.SDK3.Components.VRCStation>();
-            if (st != null && sSt != null && st.stationEnterPlayerLocation != null && sSt.stationEnterPlayerLocation != null && st.stationEnterPlayerLocation != seat)
+            if (st != null && sSt != null && st.stationEnterPlayerLocation != null && sSt.stationEnterPlayerLocation != null && st.stationEnterPlayerLocation != seat
+                && !st.stationEnterPlayerLocation.IsChildOf(sCar) && !st.stationEnterPlayerLocation.IsChildOf(sSeat))   // 見本の物を指していたら動かさない
             {
                 Undo.RecordObject(st.stationEnterPlayerLocation, "Flight setup");
                 st.stationEnterPlayerLocation.position = seat.TransformPoint(sSeat.InverseTransformPoint(sSt.stationEnterPlayerLocation.position));
@@ -346,6 +348,42 @@ public static partial class FlightSetup
             n++;
         }
         log.AppendLine("座席: " + SeatSource + " の座席の高さを、ほかの Omega " + n + " 機に合わせました");
+    }
+
+    // 座席だけを写すメニュー（Omega_111 の座席は変えない。前後の位置を比べて、変わっていたら元に戻して知らせる）
+    [MenuItem("Tools/Omega_111 の椅子の位置をほかの Omega に写す")]
+    public static void RunCopySeat()
+    {
+        var log = new StringBuilder();
+        log.AppendLine("CopySeat " + System.DateTime.Now);
+        controller src = null;
+        foreach (var c in Object.FindObjectsOfType<controller>(true)) if (c.car != null && c.car.name == SeatSource && c.car.activeInHierarchy) { src = c; break; }
+        Vector3 p0 = Vector3.zero; Quaternion r0 = Quaternion.identity; Vector3 s0 = Vector3.one;
+        Transform vis0 = null; Vector3 vp0 = Vector3.zero; Quaternion vr0 = Quaternion.identity;
+        if (src != null)
+        {
+            p0 = src.transform.localPosition; r0 = src.transform.localRotation; s0 = src.transform.localScale;
+            vis0 = src.transform.Find("VRC_chair_udon");
+            if (vis0 != null) { vp0 = vis0.localPosition; vr0 = vis0.localRotation; }
+        }
+        try { CopySeatFromOmega0(log); }
+        catch (System.Exception e) { log.AppendLine("失敗: " + e); }
+        if (src != null)
+        {
+            bool changed = src.transform.localPosition != p0 || src.transform.localRotation != r0 || src.transform.localScale != s0
+                || (vis0 != null && (vis0.localPosition != vp0 || vis0.localRotation != vr0));
+            if (changed)
+            {
+                src.transform.localPosition = p0; src.transform.localRotation = r0; src.transform.localScale = s0;
+                if (vis0 != null) { vis0.localPosition = vp0; vis0.localRotation = vr0; }
+                log.AppendLine("ERROR: " + SeatSource + " の椅子が動いていたので、元に戻しました");
+            }
+            else log.AppendLine(SeatSource + " の椅子は変わっていません（確認済み）");
+        }
+        UnityEditor.SceneManagement.EditorSceneManager.MarkSceneDirty(UnityEngine.SceneManagement.SceneManager.GetActiveScene());
+        System.IO.Directory.CreateDirectory("Backup_flight");
+        System.IO.File.WriteAllText("Backup_flight/copy_seat_log.txt", log.ToString());
+        Debug.Log(log.ToString());
     }
 
     // Omega_1 で手で直した操縦席（RealCockpit・Levers）を、ほかの Omega にそのまま写す（座席は変えない）

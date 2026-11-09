@@ -21,6 +21,8 @@ public class GameMode : UdonSharpBehaviour
     public const int MODE_HARD = 1;
     public const int MODE_SIGHTSEEING = 2;
     private const int MODE_COUNT = 3;
+    [Tooltip("ハードモードを選べるか（2027 年中に公開予定。それまではオフ = 普通 ⇔ 遊覧 だけ）")]
+    public bool hardEnabled = false;
 
     public TextMeshPro label;
     public Subtitles subtitles;          // 選んだ言語（0 = English, 1 = 日本語, 2 = 中文）。モードの文字をその言語で出す
@@ -55,17 +57,14 @@ public class GameMode : UdonSharpBehaviour
     public MuseumAudio museum;
     bool InMuseum() { return museum != null && museum._IsInside(); }
     public void NetOwnLoss() { if (ownLost) return; ownLost = true; RequestSerialization(); }
-    // アストラル空港: 着陸しようとした機体を追っていた戦闘機は、しばらく空港のまわりで攻撃しない（全員で同じ）
+    // アストラル空港: まわり 2.5km は非戦闘地域。敵の戦闘機と船は、ここにいる機体を攻撃しない（いつでも）
     public Transform astralAirport;
-    public float astralSafeRadius = 5000f;
-    [UdonSynced] private double astralCeaseUntil;
-    public void _AstralCeasefire() { SendCustomNetworkEvent(VRC.Udon.Common.Interfaces.NetworkEventTarget.Owner, nameof(NetAstralCease)); }
-    public void NetAstralCease() { astralCeaseUntil = Networking.GetServerTimeInSeconds() + 120.0; RequestSerialization(); }
+    public float astralNoCombatRadius = 2500f;
     public bool _AstralSafe(Vector3 p)
     {
-        if (astralAirport == null || Networking.GetServerTimeInSeconds() > astralCeaseUntil) return false;
+        if (astralAirport == null) return false;
         Vector3 d = p - astralAirport.position; d.y = 0f;
-        return d.magnitude < astralSafeRadius;
+        return d.magnitude < astralNoCombatRadius;
     }
     // 「これは偵察任務である…」をもう誰かが聞いたか（ワールドで最初に飛び立った 1 人だけに流す）
     [UdonSynced] private bool reconDone;
@@ -76,6 +75,7 @@ public class GameMode : UdonSharpBehaviour
     public void NetReconReset() { if (!reconDone || warStarted) return; reconDone = false; RequestSerialization(); }
     // 「偵察任務」の無線をワールドの全員に流す（1 人目が飛び立った時）
     public AudioSource radio;            // 全員の画面で鳴らす無線（2D）
+    public VoiceBus voiceBus;            // 声が重ならないように順番に流す
     public AudioClip[] reconClips;
     public void _BroadcastRecon(int i)
     {
@@ -90,6 +90,7 @@ public class GameMode : UdonSharpBehaviour
     {
         if (radio == null || reconClips == null || i >= reconClips.Length || reconClips[i] == null) return;
         quietUntil = Time.time + reconClips[i].length + 1f;
+        if (voiceBus != null) { voiceBus._Play(radio, reconClips[i], 30f, true); return; }   // ほかの声が終わってから（重ならない）
         radio.Stop();
         radio.clip = reconClips[i];
         radio.Play();
@@ -124,7 +125,36 @@ public class GameMode : UdonSharpBehaviour
         int i = (int)Mathf.Abs((float)(warStart % fleetClips.Length)) % fleetClips.Length;   // 全員同じ方
         if (i < 0) i = 0;
         if (fleetClips[i] == null) return;
+        if (voiceBus != null) { voiceBus._Play(radio, fleetClips[i], 60f, false); return; }
         radio.clip = fleetClips[i];
+        radio.Play();
+    }
+
+    // 対空砲を持った護衛艦（S2・S3）が出てきた時の、司令部の無線（全員に。遊覧モードでは流さない）
+    public float escortAnnounceAt = 240f;  // 戦闘が始まってから、護衛艦の無線を流す時刻（護衛艦は 5 分後に出てくる。Tools/S2・S3 の護衛艦を設定する が入れる）
+    public AudioClip[] escortClips;        // 「対空砲を持った護衛艦がこちらに向かっている」
+    private bool escortAnnounced;
+    private double escortAnnFor;
+    // 「対空砲を持った護衛艦が向かっている」の無線が流れている間（AI の音声案内を止める）
+    public bool _EscortTalking()
+    {
+        if (radio == null || !radio.isPlaying || radio.clip == null || escortClips == null) return false;
+        for (int i = 0; i < escortClips.Length; i++) if (escortClips[i] == radio.clip) return true;
+        return false;
+    }
+    void UpdateEscortAnnounce()
+    {
+        if (warStart != escortAnnFor) { escortAnnFor = warStart; escortAnnounced = false; }   // また戦闘になったらまた流す
+        if (escortAnnounced || escortClips == null || escortClips.Length == 0 || radio == null) return;
+        float e = _WarElapsed();
+        if (e < 0f || e < escortAnnounceAt) return;
+        if (e > escortAnnounceAt + 60f || mode == MODE_SIGHTSEEING || InMuseum()) { escortAnnounced = true; return; }   // 後から入った人には流さない
+        escortAnnounced = true;
+        int i = (int)Mathf.Abs((float)(warStart % escortClips.Length)) % escortClips.Length;
+        if (escortClips[i] == null) return;
+        if (voiceBus != null) { voiceBus._Play(radio, escortClips[i], 60f, false); return; }   // ほかの声が終わってから（重ならない）
+        if (radio.isPlaying) { escortAnnounced = false; return; }
+        radio.clip = escortClips[i];
         radio.Play();
     }
 
@@ -206,6 +236,7 @@ public class GameMode : UdonSharpBehaviour
     void Update()
     {
         UpdateFleetAnnounce();
+        UpdateEscortAnnounce();
         if (subtitles != null && subtitles._Lang() != shownLang) Show();
         if (radio != null) { bool m = InMuseum(); if (radio.mute != m) radio.mute = m; }
         if (Time.time >= nextFlyCheck)
@@ -235,6 +266,7 @@ public class GameMode : UdonSharpBehaviour
         }
         Networking.SetOwner(Networking.LocalPlayer, gameObject);
         mode = (mode + 1) % MODE_COUNT;   // 普通 → ハード → 遊覧 → 普通 …
+        if (mode == MODE_HARD && !hardEnabled) mode = MODE_SIGHTSEEING;   // ハードはまだ選べない（普通 ⇔ 遊覧）
         warStarted = false;               // モードを切り替えたら、戦闘の状態は最初から（また警告から）
         betrayed = false;                 // 遊覧モードの裏切りも元に戻す
         escortPlane = -1;
@@ -287,11 +319,20 @@ public class GameMode : UdonSharpBehaviour
         else
         {
             string[] t = {
-                "<color=#7fff9f><size=140%>NORMAL MODE</size></color>\n<size=70%>No anti-aircraft guns.\nPress to switch to HARD (score x2)</size>",
-                "<color=#7fff9f><size=140%>普通モード</size></color>\n<size=70%>対空砲はありません。\n押すとハードモードに切り替え（得点2倍）</size>",
-                "<color=#7fff9f><size=140%>普通模式</size></color>\n<size=70%>没有防空炮。\n按下切换为困难模式（得分×2）</size>" };
+                "<color=#7fff9f><size=140%>NORMAL MODE</size></color>\n<size=70%>Only the carrier fleet uses anti-aircraft guns.\nPress to switch to HARD (score x2)</size>",
+                "<color=#7fff9f><size=140%>普通モード</size></color>\n<size=70%>対空砲は空母の艦隊だけ。\n押すとハードモードに切り替え（得点2倍）</size>",
+                "<color=#7fff9f><size=140%>普通模式</size></color>\n<size=70%>只有航母舰队会使用防空炮。\n按下切换为困难模式（得分×2）</size>" };
             string[] it = { "Switch to HARD mode (score x2)", "ハードモードにする（得点2倍）", "切换为困难模式（得分×2）" };
             text = t[l]; interact = it[l];
+            if (!hardEnabled)   // ハードはまだ選べない: 次は遊覧モード
+            {
+                string[] t2 = {
+                    "<color=#7fff9f><size=140%>NORMAL MODE</size></color>\n<size=70%>Only the carrier fleet uses anti-aircraft guns.\nPress to switch to SIGHTSEEING\n<color=#ff8080>HARD MODE: coming in 2027</color></size>",
+                    "<color=#7fff9f><size=140%>普通モード</size></color>\n<size=70%>対空砲は空母の艦隊だけ。\n押すと遊覧モードに切り替え\n<color=#ff8080>ハードモードは 2027 年公開予定</color></size>",
+                    "<color=#7fff9f><size=140%>普通模式</size></color>\n<size=70%>只有航母舰队会使用防空炮。\n按下切换为游览模式\n<color=#ff8080>困难模式将于 2027 年推出</color></size>" };
+                string[] it2 = { "Switch to SIGHTSEEING mode", "遊覧モードにする", "切换为游览模式" };
+                text = t2[l]; interact = it2[l];
+            }
             mat = normalMat;
         }
 

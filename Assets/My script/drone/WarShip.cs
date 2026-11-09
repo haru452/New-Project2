@@ -88,6 +88,8 @@ public partial class WarShip : UdonSharpBehaviour
     public float pathMargin = 0f;         // コースの左右この距離にも島が無いこと（艦隊の幅）
     public bool useFormation;             // 艦隊の船: leader（空母）の向きから見て formationOffset の位置を走る
     public WarShip[] escorts;             // 空母: 艦隊の船（沈められた時、生き残りが見えている間は別の場所へ移らない）
+    [Tooltip("空母の艦隊で対空砲を持つ船（決まった 2 隻だけ。どのモードでも撃つ）。艦隊のほかの船は対空砲を持たない")]
+    public bool fleetAA;
     public Vector3 formationOffset;
     private double seenWorldStart;
 
@@ -133,6 +135,11 @@ public partial class WarShip : UdonSharpBehaviour
     private float nextCheck;
     private float nextLog;
     private Vector3 modelBasePos;
+    [Header("沈められた時（FlightTarget.sinkTime の間に沈む）")]
+    public float sinkDepth = 60f;         // 沈む深さ (m)
+    public float sinkRoll = 18f;          // 横に傾く角度
+    public float sinkPitch = 8f;          // 前後に傾く角度
+    private bool modelSunk;
     private Quaternion modelBaseRot;
     private Vector3[] rPos, rVel;
     private float[] rAge;
@@ -162,6 +169,7 @@ public partial class WarShip : UdonSharpBehaviour
         {
             modelBasePos = model.transform.localPosition;
             modelBaseRot = model.transform.localRotation;
+            RecordDamageFx();   // 炎・煙の位置（沈む時に、見た目と一緒に動かすため）
         }
         nextFire = Time.time + 3f;
         int rn = rockets != null ? rockets.Length : 0;
@@ -209,6 +217,7 @@ public partial class WarShip : UdonSharpBehaviour
     // ランダムな海の上に輪のコースを作る（出撃地点の近く・島の上は避ける）
     void GeneratePath(int seed)
     {
+        if (carrierApproach) { GenerateCarrierPath(seed); return; }   // 空母: 作戦範囲の外から入ってくる（WarShip_4.cs）
         builtSeed = seed;
         phaseShift = 0f; waiting = false;   // 新しいコースは最初から
         rng = seed % 2147483647;
@@ -220,6 +229,13 @@ public partial class WarShip : UdonSharpBehaviour
             float R = 900f + NextF() * 1400f;
             float cr = avoidRadius + R * 1.3f + 500f + NextF() * Mathf.Max(roamRadius - avoidRadius - R * 1.3f - 500f, 100f);
             Vector3 c = new Vector3(avoidCenter.x + Mathf.Cos(ca) * cr, y, avoidCenter.z + Mathf.Sin(ca) * cr);
+            if (keepInArea && !carrierApproach)
+            {
+                // 輪の真ん中を作戦範囲の中へ寄せる（輪ごと範囲に収まるように）
+                float h = Mathf.Max(opHalf - areaInset - R * 1.25f, 100f);
+                c.x = Mathf.Clamp(c.x, opCenter.x - h, opCenter.x + h);
+                c.z = Mathf.Clamp(c.z, opCenter.y - h, opCenter.y + h);
+            }
             Vector3[] pts = new Vector3[6];
             float a0 = NextF() * Mathf.PI * 2f;
             for (int i = 0; i < 6; i++)
@@ -281,6 +297,7 @@ public partial class WarShip : UdonSharpBehaviour
     // コース上の今の位置（m）。待っている間は進まない
     float PathS(float gap)
     {
+        if (carrierApproach) return CarrierS(gap);
         double t = waiting ? waitStart : Networking.GetServerTimeInSeconds();
         float s = (float)((t * pathSpeed + pathPhase + phaseShift - gap) % pathLen);
         if (s < 0f) s += pathLen;
@@ -331,7 +348,7 @@ public partial class WarShip : UdonSharpBehaviour
             {
                 // 待った時間の分だけ位置を戻して、そこから進む（全員の画面で同じ）
                 phaseShift -= (float)((now - waitStart) * pathSpeed);
-                phaseShift = phaseShift % pathLen;
+                if (!carrierApproach) phaseShift = phaseShift % pathLen;
                 waiting = false;
                 RequestSerialization();
             }

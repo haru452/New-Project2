@@ -4,7 +4,7 @@ using UnityEditor;
 using UnityEditor.SceneManagement;
 using UnityEngine;
 
-// 伊402 を動かした分だけ、まわりに置いた物（機体の出てくる場所・カタパルト・R35 4 機・乗り降りの扉など）も動かす。
+// 伊402 を動かした分だけ、まわりに置いた物（機体の出てくる場所・カタパルト・プレイヤーの機体・乗り降りの扉など）も動かす。
 // 元の伊402 の位置 (290.65, -11.2, 297.2) のまわり 300m にある物が対象（海・雲・カメラは除く）。
 // Backup_flight/run_movesub.flag があれば再読み込み時に一度だけ実行。
 [InitializeOnLoad]

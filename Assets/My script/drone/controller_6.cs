@@ -44,6 +44,7 @@ public partial class controller
             if (guidedLeft <= 0) return;
             if (!locked) { noLockMsgUntil = Time.time + 1.2f; return; }
             guidedLeft--;
+            if (joinLog != null) joinLog._UsedGuided();   // 称号「古の撃墜王」はこの出撃ではもらえない
         }
         else
         {
@@ -53,6 +54,8 @@ public partial class controller
         lastMissileTime = Time.time;
         OnPlayerFired();
         LaunchMissile(true, guided ? lockCand : -1);
+        if (guided && lockCand >= 0 && radarTracks != null && lockCand < radarTracks.Length && radarTracks[lockCand] != null)   // 調査用（原因が分かったら消す）
+            Debug.Log("[MissileDebug] 発射 狙い: " + radarTracks[lockCand].name + " 位置 " + radarTracks[lockCand].position.ToString("F0") + " / 自分 " + car.transform.position.ToString("F0") + " / 距離 " + Vector3.Distance(radarTracks[lockCand].position, car.transform.position).ToString("F0") + "m");
         QueueVoice(voiceMissile);
         // 他の人の画面にも飛ばす（見た目だけ）
         SendCustomNetworkEvent(NetworkEventTarget.All, guided ? nameof(NetMissileGuided) : nameof(NetMissile));
@@ -102,7 +105,9 @@ public partial class controller
         mReal[slot] = real;
         mBurning[slot] = true;
         mTgt[slot] = tgt;
-        mTgtPrev[slot] = (tgt >= 0 && radarTracks[tgt] != null) ? radarTracks[tgt].position : Vector3.zero;
+        mTgtPrev[slot] = (tgt >= 0 && radarTracks[tgt] != null) ? MissileAimPoint(tgt) : Vector3.zero;
+        mTgtVel[slot] = Vector3.zero;
+        mOffWarned[slot] = false;
 
         Transform m = missiles[slot];
         m.position = p;
@@ -134,9 +139,16 @@ public partial class controller
             if (guided)
             {
                 // 誘導: 標的の動きを先読みして、曲がれる速さの範囲で向きを変える
-                tp = radarTracks[mTgt[i]].position;
-                tRad = TrackRadius(mTgt[i]);
-                Vector3 tv = dt > 0.0001f ? (tp - mTgtPrev[i]) / dt : Vector3.zero;
+                tp = MissileAimPoint(mTgt[i]);
+                tRad = IsShipTrack(mTgt[i]) ? shipFuseRadius : TrackRadius(mTgt[i]);
+                // 標的の動く速さ: 1 フレームの差だけだと、位置が飛んだ時（読み込みで止まった・ネットワークで合わせ直した）に
+                //   とても速く動いたように見えて、ミサイルが見当違いの先を狙っていた → ならして、ありえない速さは無視する
+                if (dt > 0.0001f)
+                {
+                    Vector3 raw = (tp - mTgtPrev[i]) / dt;
+                    if (raw.sqrMagnitude < leadMaxSpeed * leadMaxSpeed) mTgtVel[i] = Vector3.Lerp(mTgtVel[i], raw, Mathf.Clamp01(dt * 4f));
+                }
+                Vector3 tv = mTgtVel[i];
                 mTgtPrev[i] = tp;
                 if (mAge[i] > 0.25f && sp > 1f)
                 {
@@ -146,6 +158,12 @@ public partial class controller
                     {
                         v = Vector3.RotateTowards(v, aim.normalized * sp, guidedTurnRate * Mathf.Deg2Rad * dt, 0f);
                         dir = v / sp;
+                        // 調査用: 標的から大きくそれたら 1 回だけログに出す（原因が分かったら消す）
+                        if (mReal[i] && !mOffWarned[i] && mAge[i] > 1f && Vector3.Angle(dir, tp - mPos[i]) > 60f)
+                        {
+                            mOffWarned[i] = true;
+                            Debug.Log("[MissileDebug] それた " + Vector3.Angle(dir, tp - mPos[i]).ToString("F0") + "度 / 狙い " + radarTracks[mTgt[i]].name + " / 標的の速さ " + tv.magnitude.ToString("F0") + "m/s / 距離 " + Vector3.Distance(tp, mPos[i]).ToString("F0") + "m / 飛んだ時間 " + mAge[i].ToString("F1") + "s");
+                        }
                     }
                 }
             }
@@ -216,8 +234,32 @@ public partial class controller
         }
     }
 
+    // 船・空母・貨物船か
+    bool IsShipTrack(int t)
+    {
+        FlightTarget ft = (radarTrackTargets != null && t >= 0 && t < radarTrackTargets.Length) ? radarTrackTargets[t] : null;
+        return ft != null && (ft.kind == 1 || ft.kind == 2 || ft.kind == 3);
+    }
+
+    // 追跡ミサイルが狙う点: 船は位置が海面の高さなので、甲板のあたり（shipAimLift 上）を狙う
+    Vector3 MissileAimPoint(int t)
+    {
+        Vector3 p = radarTracks[t].position;
+        if (IsShipTrack(t)) p += Vector3.up * shipAimLift;
+        return p;
+    }
+
     void MissileImpact(int i, Vector3 p, bool water, Collider hitCol, FlightTarget direct)
     {
+        // 調査用: 自分の撃ったミサイルが爆発した理由（追跡ミサイルが海で爆発する件）。原因が分かったら消す
+        if (mReal[i])
+        {
+            string tn = "なし";
+            if (mTgt[i] >= 0 && radarTracks != null && mTgt[i] < radarTracks.Length && radarTracks[mTgt[i]] != null)
+                tn = radarTracks[mTgt[i]].name + " 位置 " + radarTracks[mTgt[i]].position.ToString("F0");
+            string why = water ? "海面" : (hitCol != null ? "当たり判定 " + hitCol.name + "（" + hitCol.transform.root.name + "）" : "近接信管");
+            Debug.Log("[MissileDebug] 爆発 " + p.ToString("F0") + " 理由: " + why + " / 狙い: " + tn + " / 飛んだ時間 " + mAge[i].ToString("F1") + "s");
+        }
         if (water)
         {
             // 海に落ちたら大きな水柱

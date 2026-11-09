@@ -13,6 +13,7 @@ using UdonSharp;
 public static partial class FlightSetup
 {
     const int ShipsPerPlayer = 5;
+    // 2026-11-08 本番の 600 秒（10 分）に戻した（デバッグ中は 60 秒にしていた）。変えたら「Tools/アチーブメントを設定する」を実行
     const float CarrierAppearDelay = 600f;   // 戦闘が始まってから空母の艦隊が出てくるまでの秒数（10 分）
     const float ShipAvoid = 2000f;   // 動く船は出撃地点の 2km 以内に入らない
 
@@ -408,6 +409,7 @@ public static partial class FlightSetup
         }
         foreach (var vr in Object.FindObjectsOfType<VoiceRelay>(true)) { add(voice, vr.voiceOut); add(radio, vr.radioOut); }
         foreach (var gm in Object.FindObjectsOfType<GameMode>(true)) add(radio, gm.radio);
+        foreach (var ab in Object.FindObjectsOfType<AreaBoundary>(true)) add(radio, ab.radio);   // 作戦範囲外の警告
         foreach (var gs in Object.FindObjectsOfType<GunnerStation>(true)) { add(alarm, gs.stallWarnAudio); add(alarm, gs.stallAudio); add(alarm, gs.alarmAudio); add(weapon, gs.gunAudio); }
         // 機体・船・敵機・標的・共有の爆発に付いている残りの音は「武器・爆発」
         var weaponRoots = new System.Collections.Generic.List<Transform>();

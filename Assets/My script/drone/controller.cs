@@ -18,9 +18,9 @@ using TMPro;
 //    W/S : ピッチ（Sで機首上げ。invertPitchで反転）
 //    A/D : ロール      Q/E（または Q/R）: ラダー（ヨー）。水上ではその場で向きを変える
 //    左Shift : スロットル上げ   左Ctrl : スロットル下げ
-//    F : フラップ切替   B : ブレーキ   T : 離水ブースト（上昇→前へ加速）   ジャンプ : 降りる
+//    F : フラップ切替   B : ブレーキ   T : 離水ブースト（上昇→前へ加速）   Enter : 降りる（VR はジャンプ）
 //    1 / 2 / 3 : 武器の切り替え（1 = 機銃、2 = 無誘導ミサイル、3 = ロックオンミサイル）
-//    Enter（または左クリック） : 選んだ武器を撃つ
+//    Space（または左クリック） : 選んだ武器を撃つ（SaccFlight と同じ）
 //    M : 音声案内（敵ドローンの方向・撃墜）のオン/オフ
 //    P : ガンナーモードの切り替え（1 人でも砲塔を操作できる。その間は自動操縦で水平飛行）
 //    ロックオン: 3 を選んで敵を機首の前（約12°以内）に1秒入れると赤い四角で囲まれる → 発射
@@ -134,8 +134,8 @@ public partial class controller : UdonSharpBehaviour
     float gearAnim = 1f, gearAnimShown = -1f;
     public bool _HasGear() { return gearPivots != null && gearPivots.Length > 0; }
     public float _GearLift() { return _HasGear() && gearDown ? gearLift : 0f; }
-    public void NetGearDown() { gearDown = true; }
-    public void NetGearUp() { gearDown = false; }
+    public void NetGearDown() { if (!gearDown) PlayMech(gearDownClip); gearDown = true; }   // 音は、脚が本当に動く時だけ（controller_9.cs）
+    public void NetGearUp() { if (gearDown) PlayMech(gearUpClip); gearDown = false; }
     // 後から入ってきた人にも、今の脚の状態をそのまま見せる（動かさずに一瞬で合わせる）
     public void NetGearUpNow() { gearDown = false; gearAnim = 0f; ApplyGear(); }
     public void NetGearDownNow() { gearDown = true; gearAnim = 1f; ApplyGear(); }
@@ -159,6 +159,7 @@ public partial class controller : UdonSharpBehaviour
         if (!_HasGear()) return;
         if (gearDown && grounded) return;   // 地面にいる間はしまえない
         gearDown = !gearDown;
+        PlayMech(gearDown ? gearDownClip : gearUpClip);   // 本人の分（ほかの人は NetGearDown / NetGearUp で鳴る）
         SendCustomNetworkEvent(NetworkEventTarget.All, gearDown ? nameof(NetGearDown) : nameof(NetGearUp));
     }
     void UpdateGear(float dt)
@@ -274,7 +275,8 @@ public partial class controller : UdonSharpBehaviour
 
     [Header("音声案内（本人にだけ聞こえる）")]
     public AudioSource voiceAudio;
-    public AudioClip[] voiceClock;         // 「Enemy drone, N o'clock」 0 = 12時, 1 = 1時 …
+    public VoiceBus voiceBus;              // 声が重ならないように順番に流す（無い時は今までどおり直接流す）
+    public AudioClip[] voiceClock;        // 「Enemy drone, N o'clock」 0 = 12時, 1 = 1時 …
     public AudioClip voiceKill;            // 「Splash one. Enemy drone destroyed.」
     public AudioClip voiceOn;
     public AudioClip voiceOff;
@@ -301,6 +303,8 @@ public partial class controller : UdonSharpBehaviour
     public float lockTime = 1.0f;          // ロックが完了するまでの時間（秒）
     public float guidedTurnRate = 35f;     // 誘導中に曲がれる速さ（度/秒）
     public float guidedBurnTime = 4f;      // 推進する時間（秒）
+    public float shipAimLift = 10f;        // 船を狙う時、海面からこの高さ（m）を狙う
+    public float shipFuseRadius = 6f;      // 船の近接信管（m）。船体に当たらなくても、この距離まで近づいたら爆発
 
     [Header("墜落")]
     public ParticleSystem crashFx;          // 墜落時の爆発（シーンに1つを共有）
@@ -372,7 +376,7 @@ public partial class controller : UdonSharpBehaviour
     public float bsfc = 0.30f;               // kg/kWh（ガソリンエンジンの燃料消費率）
     public float idlePowerFrac = 0.08f;      // アイドルの出力の割合
     public float fuelRefSpeed = 55f;         // 基準の速さ（最高速度 約 200 km/h）m/s
-    public float fullThrottleMinutes = 5f;   // 満タンから全開で飛べる時間（分）
+    public float fullThrottleMinutes = 7f;   // 満タンから全開で飛べる時間（分）（FuelMinutesSetup がシーンに入れる）
     public float refuelSeconds = 20f;        // 出発地点の近くで満タンになるまでの時間（秒）
     public TextMeshPro cpFuel;               // 燃料の表示
     public AudioClip voiceLowFuel, voiceFuelEmpty;
@@ -457,6 +461,7 @@ public partial class controller : UdonSharpBehaviour
 
     private float inPitch, inRoll, inYaw, inThrottleCmd;
     private float vrLookX, vrLookY;
+    private bool arrowsHeld;   // デスクトップの矢印キーで操縦中
     private bool vrGrip;
     private bool vrLeftGrip, vrLeftGripPrev, vrBoostDone;
     // SaccFlight 風の VR 操作
@@ -528,9 +533,12 @@ public partial class controller : UdonSharpBehaviour
     private int guidedLeft;
     private int[] mTgt;                 // 誘導の標的（radarTracks の番号、-1 = 無誘導）
     private Vector3[] mTgtPrev;
+    private Vector3[] mTgtVel;          // 標的の動く速さ（ならした値。位置が飛んだ時の急な値は使わない）
+    private bool[] mOffWarned;          // 調査用: 大きくそれたことを 1 回だけログに出す
+    private const float leadMaxSpeed = 350f;   // これより速く動いたように見えたら、位置が飛んだだけとして無視する (m/s)
 
     // ---- 武器の選択・ロックオン ----
-    private int weapon;                 // 0 = 機銃, 1 = 無誘導ミサイル, 2 = ロックオンミサイル
+    private int weapon;                 // 0 = 機銃, 1 = 無誘導ミサイル, 2 = ロックオンミサイル, 3 = 魚雷（controller_9.cs）
     private bool useHeld, trigPrev, cycleInput, cyclePrev;
     private int lockCand = -1;
     private float lockTimer;
@@ -548,6 +556,7 @@ public partial class controller : UdonSharpBehaviour
     private bool[] vAnnounced, vDead;
     private bool vInit;
     private AudioClip[] vQueue = new AudioClip[3];
+    private float[] vQueueAt = new float[3];   // 列に入れた時刻（古くなった案内は流さない）
     private int vQCount;
     private float nextVoiceScan;
 }

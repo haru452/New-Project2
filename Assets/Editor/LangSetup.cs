@@ -165,6 +165,38 @@ public static class LangSetup
         return root;
     }
 
+    // 字幕の本体は毎回作り直すので、言語を見ている部品（LangSwap・GameMode・世界ランキングなど）を新しい本体につなぎ直す。
+    // しないと、消えた古い本体を指したままになり、言語を選んでも切り替わらない
+    static void Relink(Subtitles sub, StringBuilder log)
+    {
+        int n = 0;
+        foreach (var b in Object.FindObjectsOfType<UdonSharpBehaviour>(true))
+        {
+            if (b == null || b == sub) continue;
+            bool changed = false;
+            foreach (var fi in b.GetType().GetFields(System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Instance))
+            {
+                if (fi.FieldType != typeof(Subtitles)) continue;
+                if ((Object)(fi.GetValue(b) as Subtitles) == sub) continue;
+                if (!changed) Undo.RecordObject(b, "Lang");
+                fi.SetValue(b, sub); changed = true;
+            }
+            if (changed) { UdonSharpEditorUtility.CopyProxyToUdon(b); EditorUtility.SetDirty(b); n++; }
+        }
+        log.AppendLine("言語を見ている部品を、新しい字幕の本体につなぎ直しました: " + n + " 個");
+    }
+
+    // Backup_flight/run_langsetup.flag がある時に 1 回だけ実行
+    [InitializeOnLoadMethod]
+    static void FlagRun() { EditorApplication.delayCall += FlagTry; }
+    static void FlagTry()
+    {
+        if (!File.Exists("Backup_flight/run_langsetup.flag")) return;
+        if (EditorApplication.isPlayingOrWillChangePlaymode || EditorApplication.isCompiling || EditorApplication.isUpdating) { EditorApplication.delayCall += FlagTry; return; }
+        File.Delete("Backup_flight/run_langsetup.flag");
+        Run(); EditorSceneManager.SaveOpenScenes();
+    }
+
     [MenuItem("Tools/言語選択と字幕を設定する")]
     public static void Run()
     {
@@ -281,6 +313,7 @@ public static class LangSetup
         sub.spkJa = spkJa.ToArray(); sub.spkZh = spkZh.ToArray(); sub.spkColor = spkCol.ToArray();
         sub.text = tmp; sub.nameText = nameTmp; sub.textGo = txtGo; sub.textTf = txtGo.transform; sub.chooser = sign;
         UdonSharpEditorUtility.CopyProxyToUdon(sub);
+        Relink(sub, log);
 
         // 動的フォントに足した文字の画像も保存する（保存しないと、再生した時に文字の形が空になる）
         foreach (var at in font.atlasTextures) if (at != null) EditorUtility.SetDirty(at);

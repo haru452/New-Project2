@@ -49,6 +49,13 @@ public partial class EnemyDrone : UdonSharpBehaviour
     public WarShip carrierShip;              // 空母（出てくる前は、戦闘機も見えない・飛ばない）
     [UdonSynced] private int cState;         // 0 = 甲板で待機, 1 = 発艦中, 2 = 飛行中, 3 = 着艦に向かう
     private float cTimer, cNoPlayer, nextCarrierCheck, cNearest = 1e9f;
+    [Tooltip("燃料（分）: 発艦・離陸するたびに、この間のどれかに決める。切れたら戻って着陸し、補給してまた飛ぶ")]
+    public float fuelMinMinutes = 4f, fuelMaxMinutes = 8f;
+    public float refuelSeconds = 30f;        // 着陸してから、また飛べるまでの補給の時間
+    private float fuelLeft;                  // 残りの燃料（秒）
+    private bool lowFuel;                    // 燃料切れで帰る途中（プレイヤーが近くにいても戻らない）
+    private float refuelUntil;
+    private bool fuelSet;                    // この画面で燃料を決めたか（持ち主が替わった時は、その場で決め直す）
 
     [Header("警戒機と編隊")]
     public bool isAwacs;                 // 警戒機: 攻撃しない。見つけたら知らせる（ハード = 全戦闘機、ノーマル = 編隊の 2 機）
@@ -270,6 +277,17 @@ public partial class EnemyDrone : UdonSharpBehaviour
             Vector3 dirW = fw.sqrMagnitude > 1f ? fw.normalized : Vector3.forward;
             Vector3 pw = avoidCenter + dirW * (avoidRadius + 200f);
             waypoint = new Vector3(pw.x, waypoint.y, pw.z);
+        }
+        // アストラル空港のまわり（非戦闘地域）にも置かない
+        if (gameMode != null && gameMode.astralAirport != null)
+        {
+            Vector3 fa = waypoint - gameMode.astralAirport.position; fa.y = 0f;
+            float ra = gameMode.astralNoCombatRadius + 1000f;
+            if (fa.magnitude < ra)
+            {
+                Vector3 pa = gameMode.astralAirport.position + (fa.sqrMagnitude > 1f ? fa.normalized : Vector3.forward) * ra;
+                waypoint = new Vector3(pa.x, waypoint.y, pa.z);
+            }
         }
         nextWaypointTime = Time.time + Random.Range(25f, 45f);
     }

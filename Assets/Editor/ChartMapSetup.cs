@@ -221,11 +221,15 @@ public static class ChartMapSetup
         var tex = AssetDatabase.LoadAssetAtPath<Texture2D>(Png);
 
         // ---- 海図台に貼る ----
+        // 歴史の間には main room の艦橋のコピー（海図台も）があるので、そちらは使わない。前にまちがえて作った物は消す
+        foreach (var t in Object.FindObjectsOfType<Transform>(true))
+            if (t != null && t.name == "ChartLive" && InHistory(t)) { Undo.DestroyObjectImmediate(t.gameObject); log.AppendLine("歴史の間の海図台に作られていた ChartLive を消しました"); }
         int set = 0;
         MeshRenderer mapR = null;
         foreach (var r in Object.FindObjectsOfType<MeshRenderer>(true))
         {
             if (r.name != "Map" || r.transform.parent == null || r.transform.parent.name != "ChartTable") continue;
+            if (InHistory(r.transform)) continue;
             var m = r.sharedMaterial;
             if (m == null) continue;
             Undo.RecordObject(m, "Chart map");
@@ -239,10 +243,19 @@ public static class ChartMapSetup
         UnityEditor.SceneManagement.EditorSceneManager.MarkSceneDirty(UnityEngine.SceneManagement.SceneManager.GetActiveScene());
         UnityEditor.SceneManagement.EditorSceneManager.SaveOpenScenes();
         log.AppendLine("海図台の地図に貼りました: " + set + " 枚（" + Png + "）");
+        if (mapR != null) log.AppendLine("島の説明を作った海図台: " + mapR.transform.root.name);
         File.WriteAllText("Backup_flight/chartmap_report.txt", log.ToString());
+        LangImages.Run();   // 作り直した島の説明・札を、選んだ言語で出すようにする
         Debug.Log("[ChartMap]\n" + log);
     }
 
+
+    // 歴史の間（main room の艦橋のコピー）の中か
+    static bool InHistory(Transform t)
+    {
+        for (; t != null; t = t.parent) if (t.name == "HistoryRoom") return true;
+        return false;
+    }
 
     // ---- 味方の戦闘機の印（リアルタイム）と島の名前 ----
     const string LiveCs = "Assets/My script/bridge/ChartMapLive.cs";

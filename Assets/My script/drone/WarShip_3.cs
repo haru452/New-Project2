@@ -186,4 +186,78 @@ public partial class WarShip
             impactAudio.Play();
         }
     }
+
+    // ---- 軽量化 ----
+    // 自分が操縦している機体（0.5 秒ごとに探す。船ごとに毎フレーム全機体を調べると、船が多い時にとても重い）
+    private controller cachedMine;
+    private float nextMineScan;
+    controller Mine()
+    {
+        if (Time.time < nextMineScan) return cachedMine;
+        nextMineScan = Time.time + 0.5f;
+        cachedMine = null;
+        if (planes == null) return null;
+        for (int i = 0; i < planes.Length; i++)
+        {
+            if (planes[i] == null) continue;
+            VRCPlayerApi p = planes[i]._GetPilot();
+            if (p != null && p.isLocal) { cachedMine = planes[i]; break; }
+        }
+        // アストラル空港のまわり（停戦中）にいる機体は狙わない
+        if (cachedMine != null && gameMode != null && cachedMine.car != null && gameMode._AstralSafe(cachedMine.car.transform.position)) cachedMine = null;
+        return cachedMine;
+    }
+
+    bool AnyOn(bool[] a)
+    {
+        for (int i = 0; i < a.Length; i++) if (a[i]) return true;
+        return false;
+    }
+
+    // 近くの船だけ、航跡の泡と影を出す（大きな半透明の泡と影は、船が密集していると重い）
+    public float detailDistance = 1500f;
+    private bool detailOn = true;
+    private bool[] castsShadow;   // 元から影を出していた部品
+    void SetDetail(bool on)
+    {
+        if (on == detailOn) return;
+        detailOn = on;
+        if (target == null || target.renderers == null) return;
+        Renderer[] rs = target.renderers;
+        if (castsShadow == null)
+        {
+            castsShadow = new bool[rs.Length];
+            for (int i = 0; i < rs.Length; i++) castsShadow[i] = rs[i] != null && rs[i].shadowCastingMode != UnityEngine.Rendering.ShadowCastingMode.Off;
+        }
+        for (int i = 0; i < rs.Length; i++)
+            if (rs[i] != null && castsShadow[i]) rs[i].shadowCastingMode = on ? UnityEngine.Rendering.ShadowCastingMode.On : UnityEngine.Rendering.ShadowCastingMode.Off;
+    }
+
+    // ---- ダメージの炎・煙: 沈む時は、見た目（model）と一緒に動かす（海の中に入った分は、海面で燃え続ける）----
+    //  置く場所は「Tools/船の煙と炎の位置を直す」で、船の形に合わせて前もって決めておく
+    private Vector3[] smokeLocal, fireLocal;   // model から見た位置（Start で覚える）
+
+    void RecordDamageFx()
+    {
+        if (model == null) return;
+        Transform mt = model.transform;
+        int ns = dmgSmoke != null ? dmgSmoke.Length : 0, nf = dmgFire != null ? dmgFire.Length : 0;
+        smokeLocal = new Vector3[ns]; fireLocal = new Vector3[nf];
+        for (int i = 0; i < ns; i++) if (dmgSmoke[i] != null) smokeLocal[i] = mt.InverseTransformPoint(dmgSmoke[i].transform.position);
+        for (int i = 0; i < nf; i++) if (dmgFire[i] != null) fireLocal[i] = mt.InverseTransformPoint(dmgFire[i].transform.position);
+    }
+
+    void MoveDamageFx()
+    {
+        if (model == null || smokeLocal == null || fireLocal == null) return;
+        Transform mt = model.transform;
+        for (int i = 0; i < smokeLocal.Length; i++) if (dmgSmoke[i] != null) dmgSmoke[i].transform.position = AboveSea(mt.TransformPoint(smokeLocal[i]), 3f);
+        for (int i = 0; i < fireLocal.Length; i++) if (dmgFire[i] != null) dmgFire[i].transform.position = AboveSea(mt.TransformPoint(fireLocal[i]), 1f);
+    }
+
+    Vector3 AboveSea(Vector3 p, float h)
+    {
+        if (p.y < seaLevel + h) p.y = seaLevel + h;   // 海の中に入った分は、海面で燃える
+        return p;
+    }
 }

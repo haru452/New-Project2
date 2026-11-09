@@ -224,23 +224,7 @@ public static partial class MuseumSetup
         float pb = labelPath != null ? 1.62f : 1.4f;
         var tex = Tex(plaquePath, 2048);
         if (tex != null) Stand("Plaque", mem, mem.TransformPoint(new Vector3(0f, 0f, -0.9f)), mem.rotation, Mat("Memorial_" + Path.GetFileNameWithoutExtension(plaquePath), tex, Color.white), pw, ph, pb, frame);
-        if (labelPath != null)
-        {
-            var lt = Tex(labelPath, 1024);
-            if (lt != null) Quad("CountLabel", mem, new Vector3(0f, 1.45f, -0.86f), new Vector2(1.4f, 0.19f), Mat("CountLabel", lt, Color.white));
-        }
-        // 自分が納めた数
-        var ct = new GameObject("Count");
-        ct.transform.SetParent(mem, false);
-        ct.transform.localPosition = new Vector3(0f, 1.2f, -0.86f);
-        ct.transform.localRotation = Quaternion.Euler(0f, 180f, 0f);
-        var t = ct.AddComponent<TextMeshPro>();
-        t.text = "0";
-        t.fontSize = 2.2f;
-        t.color = new Color(0.84f, 0.73f, 0.47f);
-        t.alignment = TextAlignmentOptions.Center;
-        t.enableWordWrapping = false;
-        t.rectTransform.sizeDelta = new Vector2(1.4f, 0.4f);
+        // 納めた数の表示は作らない（加護の仕組みに変えたため）
 
         // 箱（上が開いている木の箱）
         Material wood = Mat("MemorialWood", null, new Color(0.30f, 0.19f, 0.11f));
@@ -267,7 +251,6 @@ public static partial class MuseumSetup
         var mb = UdonSharpUndo.AddComponent<MemorialBox>(mbGo);
         mb.inside = inside;
         mb.joinLog = Object.FindObjectOfType<JoinLog>(true);
-        t.gameObject.SetActive(false);   // 数は出さない（加護の仕組みに変えた）
         mb.bell = au;
         UdonSharpEditorUtility.CopyProxyToUdon(mb);
 
@@ -297,7 +280,7 @@ public static partial class MuseumSetup
             pc.box = mb;
             UdonSharpEditorUtility.CopyProxyToUdon(pc);
         }
-        log.AppendLine("弔いの箱: 一番奥に置きました（折り鶴 5 羽、数は自分の合計）");
+        log.AppendLine("弔いの箱: 一番奥に置きました（折り鶴 5 羽、数の表示なし）");
     }
 
     // 折り紙の鶴の形（両面）

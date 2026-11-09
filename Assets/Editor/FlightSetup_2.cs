@@ -334,7 +334,7 @@ public static partial class FlightSetup
     }
 
     // ---------------- R35 をプールに（ドローンの代わり） ----------------
-    const int R35PoolSize = 4;
+    const int R35PoolSize = 10;
 
     static bool IsR35(GameObject go)
     {

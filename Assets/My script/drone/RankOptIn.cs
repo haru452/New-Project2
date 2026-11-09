@@ -6,11 +6,9 @@ using UnityEngine;
 public class RankOptIn : UdonSharpBehaviour
 {
     public WorldRanking ranking;
-    public bool countrySwitch;   // true = 国名なしで参加する赤いスイッチ
     public override void Interact()
     {
         if (ranking == null) return;
-        if (countrySwitch) ranking._ToggleCountry();
-        else ranking._ToggleOptIn();
+        ranking._ToggleOptIn();
     }
 }
